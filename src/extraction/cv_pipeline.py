@@ -3,15 +3,14 @@ CV Processing Pipeline
 Main orchestrator for CV extraction, normalization, translation, and storage
 """
 
-import os
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any, Tuple
-from src.extraction.pdf import PDFExtractor
+from typing import Optional, Dict, Any
+from src.extraction.pdf_extractor import PDFExtractor
 from src.extraction.markdown import HybridSectionExtractor
 from src.translation import OllamaTranslator
 from src.storage import CVStorage
-from src.schemas import CVVersion, CandidateProfile
+from src.schemas import CVVersion
 
 
 class CVProcessingPipeline:
