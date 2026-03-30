@@ -28,7 +28,7 @@ class JDRepository(BaseRepository):
         try:
             self.jd_current[key] = {
                 **value,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(datetime.timezone.utc).isoformat(),
             }
             self._track_version(key, value)
             logger.info(f"Stored JD for {key}")

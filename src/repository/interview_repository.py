@@ -30,7 +30,7 @@ class InterviewRepository(BaseRepository):
             
             entry = {
                 **value,
-                "recorded_at": datetime.utcnow().isoformat(),
+                "recorded_at": datetime.now(datetime.timezone.utc).isoformat(),
                 "sequence": len(self.interviews[key]) + 1,
             }
             

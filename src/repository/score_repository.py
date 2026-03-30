@@ -28,7 +28,7 @@ class ScoreRepository(BaseRepository):
         try:
             self.scores[key] = {
                 **value,
-                "stored_at": datetime.utcnow().isoformat(),
+                "stored_at": datetime.now(datetime.timezone.utc).isoformat(),
             }
             self._track_history(key, value)
             logger.info(f"Stored score for {key}")
@@ -67,7 +67,7 @@ class ScoreRepository(BaseRepository):
         
         history_entry = {
             **score,
-            "recorded_at": datetime.utcnow().isoformat(),
+            "recorded_at": datetime.now(datetime.timezone.utc).isoformat(),
             "sequence": len(self.score_history[key]) + 1,
         }
         

@@ -14,7 +14,7 @@ class BaseRepository(ABC):
     def __init__(self, storage_backend: Optional[Any] = None):
         """Initialize repository."""
         self.storage_backend = storage_backend or {}
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(datetime.timezone.utc)
     
     @abstractmethod
     def get(self, key: str) -> Optional[Any]:

@@ -27,10 +27,10 @@ class CVRepository(BaseRepository):
         try:
             self.cv_metadata[key] = {
                 **value,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(datetime.timezone.utc).isoformat(),
             }
             self._track_version(key, value)
-            logger.info(f"Stored CV metadata for {key}")
+            logger.info(f"Stored CV metadata for {key}.")
             return True
         except Exception as e:
             logger.error(f"Error storing CV {key}: {e}")
