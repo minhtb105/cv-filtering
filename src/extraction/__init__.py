@@ -5,8 +5,7 @@ CV Extraction Module
 from .cv_pipeline import CVProcessingPipeline
 from .cv_parser import CVParser, CVParsingConfig
 from .text_cleaner import TextCleaner
-from .section_detector import SectionDetector, SectionType
-from .markdown_generator import MarkdownGenerator, CVMarkdownConfig
+from .section_detector import HeaderDetector, RegexSectionExtractor, SectionDetector
 from .pdf_extractor import PDFExtractor
 from .llm_extractor import LLMExtractor, LLMExtractionConfig
 
@@ -15,10 +14,9 @@ __all__ = [
     "CVParser",
     "CVParsingConfig",
     "TextCleaner",
+    "HeaderDetector",
+    "RegexSectionExtractor",
     "SectionDetector",
-    "SectionType",
-    "MarkdownGenerator",
-    "CVMarkdownConfig",
     "PDFExtractor",
     "LLMExtractor",
     "LLMExtractionConfig",

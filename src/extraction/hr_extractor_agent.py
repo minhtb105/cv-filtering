@@ -1,357 +1,242 @@
 """
-HR Extractor Agent - Main CV Processing Engine
-Integrates multiple extraction layers:
-1. Markdown formatting for structure
-2. Rule-based extraction for high-confidence fields
-3. Experience engine for date parsing and career analysis
-4. LLM project detection for complex information
+HR Extractor Agent - Clean Architecture Orchestrator
 
-All methods return normalized, validated data with confidence scores
+Simplified orchestrator following Clean Architecture principles:
+1. extract_ordered_text() - Get plain ordered text from geometric engine
+2. call_llm() - Extract structured data via LLM (with fallback strategy)
+3. post_process() - Enrich with computed values (dates, experience, seniority)
+
+No legacy rule-based extraction, no fuzzy matching, no keyword lists.
+Trust LLM output, add value through computation only.
 """
 
 import logging
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime
-import json
+from typing import Dict, Optional, Any
+from dataclasses import dataclass
 
-from src.config import settings
-from src.extraction.markdown_formatter import MarkdownCVFormatter
-from src.extraction.enhanced_rules import EnhancedRuleExtractor, ExtractedField
-from src.extraction.experience_engine import (
-    DateParser, ExperienceExtractor, ExperienceEngine, ExperienceEntry, DateRange
-)
-from src.extraction.project_detection_llm import ProjectDetectionLLM, ProjectLLMValidator, LLMProject
-from src.extraction.evidence_linker import EvidenceLinker, EvidenceType, EvidenceValidator
+from src.models.domain.candidate import CandidateProfile
+from src.extraction.llm_extractor import EnhancedLLMExtractor, LLMExtractionConfig
+from src.processing.post_processor import PostProcessor, ProcessingResult
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class ExtractionConfig:
+    """Configuration for CV extraction orchestrator"""
+    use_llm: bool = True
+    llm_model: str = "qwen2.5-coder:3b"
+    llm_base_url: str = "http://localhost:11434"
+    llm_timeout: int = 30
+    temperature: float = 0.1
+
+
 class HRExtractorAgent:
-    """Main CV extraction agent with multi-layer intelligent pipeline"""
+    """
+    Orchestrator for CV extraction pipeline.
     
-    def __init__(self):
-        self.markdown_formatter = MarkdownCVFormatter()
-        self.rule_extractor = EnhancedRuleExtractor()
-        self.date_parser = DateParser()
-        self.experience_extractor = ExperienceExtractor()
-        self.experience_engine = ExperienceEngine()
-        self.project_detector = ProjectDetectionLLM()
-        self.project_validator = ProjectLLMValidator()
-        self.evidence_linker = EvidenceLinker()  # Task 4: Evidence linking
+    Clean separation of concerns:
+    - PDFExtractor handles geometric layout analysis (Steps 1-4)
+    - EnhancedLLMExtractor handles structured extraction with fallback (Step 5)
+    - PostProcessor handles enrichment and computation
+    """
     
-    def extract_cv(self, cv_text: str) -> Dict:
-        """Main extraction pipeline - process CV and return structured data"""
-        
-        if not cv_text or not cv_text.strip():
-            logger.warning("Empty CV text provided")
-            return self._empty_extraction()
-        
-        try:
-            # Step 0: Initialize evidence linking (Task 4)
-            self.evidence_linker.set_cv_text(cv_text)
-            
-            # Step 1: Convert to markdown for structure
-            markdown_cv = self.markdown_formatter.format_cv_to_markdown(cv_text)
-            
-            # Step 2: Extract basic contact info using rules
-            contact_info = self._extract_contact_info(cv_text)
-            
-            # Step 3: Extract professional info using rules
-            professional_info = self._extract_professional_info(cv_text)
-            
-            # Step 4: Extract experience with date parsing
-            years_experience = self._extract_years_experience(markdown_cv)
-            seniority = self._infer_seniority(markdown_cv, years_experience)
-            
-            # Step 5: Extract projects using LLM with experience context
-            experience_entries = self._extract_experience_entries(markdown_cv)
-            projects = self._extract_projects_and_skills_llm_enhanced(markdown_cv, experience_entries)
-            
-            # Step 6: Collect evidence for extracted fields (Task 4)
-            evidence_report = self._collect_evidence_for_extraction(contact_info, professional_info)
-            
-            # Compile final result
-            result = {
-                'contact': contact_info,
-                'professional': professional_info,
-                'experience': {
-                    'years': years_experience,
-                    'seniority': seniority,
-                    'entries': experience_entries
-                },
-                'projects': projects.get('projects', []),
-                'skills': projects.get('skills', []),
-                'extraction_status': 'success',
-                'evidence': evidence_report,
-                'timestamp': datetime.now(datetime.timezone.utc).isoformat()
-            }
-            
-            return result
-        
-        except Exception as e:
-            logger.error(f"Error in extract_cv: {e}")
-            return self._error_extraction(str(e))
-    
-    def _collect_evidence_for_extraction(
-        self,
-        contact_info: Dict,
-        professional_info: Dict
-    ) -> Dict:
-        """Collect evidence for all extracted fields (Task 4)"""
-        
-        try:
-            # Link evidence for contact info
-            for field_name, field_data in contact_info.items():
-                if field_data and field_data.get('value'):
-                    evidence = self.evidence_linker.find_evidence_for_field(
-                        field_name,
-                        field_data['value'],
-                        EvidenceType.DIRECT_MATCH
-                    )
-                    evidence.extraction_method = field_data.get('source', 'unknown')
-            
-            # Link evidence for professional info
-            for field_name, field_data in professional_info.items():
-                if field_data and field_data.get('value'):
-                    evidence = self.evidence_linker.find_evidence_for_field(
-                        field_name,
-                        field_data['value'],
-                        EvidenceType.PATTERN_MATCH
-                    )
-                    evidence.extraction_method = field_data.get('source', 'unknown')
-            
-            # Generate evidence report
-            return self.evidence_linker.get_evidence_report()
-        
-        except Exception as e:
-            logger.error(f"Error collecting evidence: {e}")
-            return {'error': str(e)}
-    
-    def _extract_contact_info(self, text: str) -> Dict[str, Optional[ExtractedField]]:
-        """Extract contact information using rule-based extraction"""
-        
-        try:
-            contact = self.rule_extractor.extract_contact_info(text)
-            
-            # Convert ExtractedField objects to dicts for JSON serialization
-            return {
-                key: {
-                    'value': field.value,
-                    'confidence': field.confidence,
-                    'source': field.source
-                } if field else None
-                for key, field in contact.items()
-            }
-        
-        except Exception as e:
-            logger.error(f"Error extracting contact info: {e}")
-            return {}
-    
-    def _extract_professional_info(self, text: str) -> Dict[str, Optional[ExtractedField]]:
-        """Extract professional information"""
-        
-        try:
-            professional = self.rule_extractor.extract_professional_info(text)
-            
-            return {
-                key: {
-                    'value': field.value,
-                    'confidence': field.confidence,
-                    'source': field.source
-                } if field else None
-                for key, field in professional.items()
-            }
-        
-        except Exception as e:
-            logger.error(f"Error extracting professional info: {e}")
-            return {}
-    
-    def _extract_years_experience(self, markdown_cv: str) -> float:
-        """Extract and calculate total years of experience"""
-        
-        try:
-            # Extract experience entries from markdown
-            experience_section = self.experience_extractor.extract_experience_section(markdown_cv)
-            experience_text = '\n'.join(experience_section)
-            
-            if not experience_text.strip():
-                logger.debug("No experience section found")
-                return 0.0
-            
-            # Parse entries
-            entries = self.experience_extractor.extract_entries(experience_text)
-            
-            if not entries:
-                logger.debug("No experience entries parsed")
-                return 0.0
-            
-            # Calculate total years
-            total_years = self.experience_engine.calculate_total_years(entries)
-            
-            return round(total_years, 1)
-        
-        except Exception as e:
-            logger.error(f"Error calculating years experience: {e}")
-            return 0.0
-    
-    def _infer_seniority(self, markdown_cv: str, years_experience: float) -> str:
-        """Infer seniority level based on experience and titles"""
-        
-        try:
-            # Get experience entries for analysis
-            experience_section = self.experience_extractor.extract_experience_section(markdown_cv)
-            experience_text = '\n'.join(experience_section)
-            
-            entries = self.experience_extractor.extract_entries(experience_text)
-            
-            if not entries:
-                return 'unknown'
-            
-            # Analyze progression
-            progression = self.experience_engine.analyze_progression(entries)
-            
-            # Determine seniority based on years and progression
-            if years_experience < 2:
-                return 'junior'
-            elif years_experience < 5:
-                if progression.get('progression') == 'healthy':
-                    return 'mid'
-                else:
-                    return 'junior'
-            elif years_experience < 10:
-                if progression.get('progression') == 'healthy':
-                    return 'senior'
-                else:
-                    return 'mid'
-            else:
-                if progression.get('progression') == 'healthy':
-                    return 'principal'
-                else:
-                    return 'senior'
-        
-        except Exception as e:
-            logger.error(f"Error inferring seniority: {e}")
-            return 'unknown'
-    
-    def _extract_experience_entries(self, markdown_cv: str) -> List[Dict]:
-        """Extract experience entries with date parsing"""
-        
-        try:
-            experience_section = self.experience_extractor.extract_experience_section(markdown_cv)
-            experience_text = '\n'.join(experience_section)
-            
-            entries = self.experience_extractor.extract_entries(experience_text)
-            
-            # Convert to dict format
-            result = []
-            for entry in entries:
-                result.append({
-                    'company': entry.company,
-                    'position': entry.position,
-                    'duration_months': entry.get_duration_months(),
-                    'duration_years': round(entry.get_duration_years(), 1),
-                    'description': entry.description
-                })
-            
-            return result
-        
-        except Exception as e:
-            logger.error(f"Error extracting experience entries: {e}")
-            return []
-    
-    def _extract_projects_and_skills_llm_enhanced(
-        self,
-        markdown_cv: str,
-        experience_entries: List[Dict]
-    ) -> Dict:
-        """Extract projects using LLM with experience context"""
-        
-        try:
-            # Convert dict entries back to ExperienceEntry objects for context
-            experience_objs = []
-            for entry_dict in experience_entries:
-                exp_entry = ExperienceEntry(
-                    company=entry_dict.get('company', ''),
-                    position=entry_dict.get('position', ''),
-                    date_range=DateRange(start_date=None, end_date=None),
-                    description=entry_dict.get('description', '')
-                )
-                experience_objs.append(exp_entry)
-            
-            # Extract projects using LLM
-            projects = self.project_detector.extract_projects_from_markdown(
-                markdown_cv,
-                experience_entries=experience_objs
+    def __init__(self, config: Optional[ExtractionConfig] = None):
+        """Initialize orchestrator with configuration"""
+        self.config = config or ExtractionConfig()
+        self.llm_extractor = EnhancedLLMExtractor(
+            LLMExtractionConfig(
+                model_name=self.config.llm_model,
+                base_url=self.config.llm_base_url,
+                timeout=self.config.llm_timeout,
+                temperature=self.config.temperature,
             )
+        )
+        self.post_processor = PostProcessor()
+    
+    def extract_cv(self, cv_ordered_text: str, language: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Main extraction orchestration pipeline.
+        
+        Flow:
+        1. extract_ordered_text() - Get plain ordered text from geometric engine
+        2. call_llm() - Extract structured data via LLM with fallback
+        3. post_process() - Enrich with computed values
+        
+        Args:
+            cv_ordered_text: Plain ordered text from geometric engine (has # headers, markdown tables)
+            language: Language code (vi, en, etc) - optional
             
-            # Extract skills using rule-based method as fallback
-            skill_field = self.rule_extractor.skill_extractor.extract(markdown_cv)
-            skills = []
-            if skill_field:
-                skills = [s.strip() for s in skill_field.value.split(',')]
-            
-            # Compile results
+        Returns:
+            Dict with extraction results: status, profile, errors
+        """
+        if not cv_ordered_text or not cv_ordered_text.strip():
+            logger.warning("Empty CV text provided")
             return {
-                'projects': [
-                    {
-                        'name': p.name,
-                        'company': p.company,
-                        'description': p.description,
-                        'technologies': p.technologies,
-                        'metrics': p.metrics,
-                        'role': p.role,
-                        'complexity_level': p.complexity_level,
-                        'confidence': p.confidence
-                    }
-                    for p in projects
-                ],
-                'skills': skills,
-                'skills_confidence': skill_field.confidence if skill_field else 0.0
+                "status": "error",
+                "profile": None,
+                "total_years_experience": 0.0,
+                "seniority_level": None,
+                "errors": ["Empty CV text provided"]
+            }
+        
+        try:
+            # Step 1: Extract ordered text (already provided as input)
+            logger.info("Step 1: Using provided ordered text from geometric engine")
+            ordered_text = cv_ordered_text
+            
+            # Step 2: Call LLM for structured extraction with fallback
+            logger.info("Step 2: Calling LLM extractor...")
+            llm_result = self.call_llm(ordered_text, language)
+            
+            if not llm_result.get("success"):
+                logger.warning(f"LLM extraction failed: {llm_result.get('error')}")
+                return {
+                    "status": "partial",
+                    "profile": None,
+                    "extraction_method": "fallback",
+                    "raw_text": ordered_text,
+                    "errors": [llm_result.get("error", "Unknown error")]
+                }
+            
+            # Step 3: Post-process to enrich profile
+            logger.info("Step 3: Post-processing...")
+            profile = llm_result.get("profile")
+            processing_result = self.post_process(profile)
+            
+            return {
+                "status": "success",
+                "profile": profile,
+                "total_years_experience": processing_result.total_years_experience,
+                "seniority_level": processing_result.seniority_level,
+                "extraction_method": llm_result.get("method", "llm"),
+                "errors": processing_result.errors
             }
         
         except Exception as e:
-            logger.error(f"Error extracting projects and skills: {e}")
-            # Return fallback with just skills
-            skill_field = self.rule_extractor.skill_extractor.extract(markdown_cv)
+            logger.error(f"Orchestration error: {e}", exc_info=True)
             return {
-                'projects': [],
-                'skills': [s.strip() for s in skill_field.value.split(',')] if skill_field else [],
-                'extraction_error': str(e)
+                "status": "error",
+                "profile": None,
+                "errors": [str(e)]
             }
     
-    def _empty_extraction(self) -> Dict:
-        """Return empty structured response"""
+    def extract_ordered_text(self, cv_text: str) -> str:
+        """
+        Extract ordered text from CV.
         
-        return {
-            'contact': {},
-            'professional': {},
-            'experience': {
-                'years': 0.0,
-                'seniority': 'unknown',
-                'entries': []
-            },
-            'projects': [],
-            'skills': [],
-            'extraction_status': 'empty_input',
-            'evidence': {'total_fields': 0, 'average_confidence': 0.0, 'fields': {}},
-            'timestamp': datetime.now(datetime.timezone.utc).isoformat()
-        }
+        This method receives already-ordered text from geometric engine.
+        In production, this integrates with PDFExtractor.extract().
+        
+        Args:
+            cv_text: Plain text from PDF (already ordered by geometric pipeline)
+            
+        Returns:
+            Ordered text with proper structure (# headers, markdown tables)
+        """
+        # In current architecture, this is already provided
+        # This method exists for clarity and extensibility
+        return cv_text
     
-    def _error_extraction(self, error_msg: str) -> Dict:
-        """Return error structured response"""
+    def call_llm(self, ordered_text: str, language: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Call LLM extractor for structured data extraction.
         
-        return {
-            'contact': {},
-            'professional': {},
-            'experience': {
-                'years': 0.0,
-                'seniority': 'unknown',
-                'entries': []
-            },
-            'projects': [],
-            'skills': [],
-            'extraction_status': 'error',
-            'error_message': error_msg,
-            'evidence': {'total_fields': 0, 'average_confidence': 0.0, 'fields': {}},
-            'timestamp': datetime.now(datetime.timezone.utc).isoformat()
-        }
+        Handles:
+        - LLM availability check
+        - JSON extraction with fallback strategy
+        - Validation of extracted profile
+        
+        Args:
+            ordered_text: Plain ordered text (has # headers, markdown tables)
+            language: Language code (vi, en, etc)
+            
+        Returns:
+            Dict with:
+            - success (bool)
+            - profile (CandidateProfile if success)
+            - method (llm_full, llm_parsed, fallback, none)
+            - error (if not success)
+        """
+        logger.info(f"Calling LLM extractor with model: {self.config.llm_model}")
+        
+        try:
+            # Call LLM with built-in fallback strategy
+            extraction_result = self.llm_extractor.extract(ordered_text, language)
+            
+            # Check result status
+            if extraction_result.get("status") == "success":
+                profile = extraction_result.get("data")
+                logger.info(f"LLM extraction successful (method: {extraction_result.get('method')})")
+                return {
+                    "success": True,
+                    "profile": profile,
+                    "method": extraction_result.get("method", "llm"),
+                }
+            
+            elif extraction_result.get("status") == "partial":
+                # LLM failed, fallback to partial extraction
+                error = extraction_result.get("error", "LLM extraction failed")
+                logger.warning(f"LLM fallback triggered: {error}")
+                return {
+                    "success": False,
+                    "profile": None,
+                    "method": "fallback",
+                    "error": error,
+                    "raw_text": extraction_result.get("raw_text")
+                }
+            
+            else:
+                # Unknown status
+                return {
+                    "success": False,
+                    "profile": None,
+                    "method": "none",
+                    "error": "Unknown extraction status"
+                }
+        
+        except Exception as e:
+            logger.error(f"LLM extraction error: {e}")
+            return {
+                "success": False,
+                "profile": None,
+                "method": "none",
+                "error": str(e)
+            }
+    
+    def post_process(self, profile: Optional[CandidateProfile]) -> ProcessingResult:
+        """
+        Post-process extracted profile for enrichment.
+        
+        Handles:
+        - Date normalization to ISO format
+        - Total experience calculation
+        - Seniority level assignment
+        
+        Args:
+            profile: CandidateProfile from LLM extraction
+            
+        Returns:
+            ProcessingResult with enriched profile and computed metadata
+        """
+        if not profile:
+            return ProcessingResult(
+                success=False,
+                profile=None,
+                errors=["No profile to post-process"]
+            )
+        
+        logger.info("Post-processing profile...")
+        
+        try:
+            result = self.post_processor.process(profile)
+            logger.info(f"Post-processing complete: {result.total_years_experience}y experience, {result.seniority_level} level")
+            return result
+        
+        except Exception as e:
+            logger.error(f"Post-processing error: {e}")
+            return ProcessingResult(
+                success=False,
+                profile=profile,
+                errors=[str(e)]
+            )

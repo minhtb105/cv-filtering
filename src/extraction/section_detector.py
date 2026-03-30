@@ -1,426 +1,354 @@
 """
-Section Detection Module
+Enhanced Section Detection Module
 
-Hybrid approach: Regex + Fuzzy Matching + Heuristics
-Supports English and Vietnamese multilingual CVs.
+Comprehensive section detection combining:
+- Lightweight header detection (existing functionality)
+- Regex-based section extraction (NoLLMExtractor from cv_reading_order.py)
+- Multilingual support for section headers
+- Integration with Geometric 5-step filter
+
+No fuzzy matching, no heavy dependencies, but enhanced regex patterns.
 """
 
 import re
-from enum import Enum
-from typing import List, Tuple, Optional, Dict
-from dataclasses import dataclass
-
-try:
-    from rapidfuzz import fuzz
-except ImportError:
-    # Fallback if rapidfuzz not available
-    fuzz = None
-
-
-class SectionType(Enum):
-    """CV section types."""
-    PERSONAL_INFO = "personal_info"
-    SUMMARY = "summary"
-    WORK_EXPERIENCE = "work_experience"
-    EDUCATION = "education"
-    SKILLS = "skills"
-    PROJECTS = "projects"
-    CERTIFICATIONS = "certifications"
-    LANGUAGES = "languages"
-    AWARDS = "awards"
-    INTERESTS = "interests"
-    UNKNOWN = "unknown"
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass, field
 
 
 @dataclass
-class Section:
-    """Detected section with metadata."""
-    line_number: int
-    type: SectionType
-    raw_text: str
+class ExtractedSection:
+    """Extracted section data with confidence scoring"""
+    section_type: str
+    content: str
     confidence: float  # 0.0 to 1.0
+    header_line: Optional[int] = None
+    header_text: Optional[str] = None
 
 
-class SectionDetector:
-    """Detects CV sections using hybrid matching strategy."""
+class HeaderDetector:
+    """
+    Lightweight header detection using simple heuristics.
+    
+    Designed for integration with the Geometric 5-step filter pipeline.
+    Focuses purely on header detection without complex matching or scoring.
+    """
+    
+    @staticmethod
+    def is_header_line(line: str) -> bool:
+        """
+        Check if line is likely a section header based on simple heuristics.
+        
+        Args:
+            line: Text line to check
+            
+        Returns:
+            True if line appears to be a section header, False otherwise
+        """
+        line_stripped = line.strip()
+        
+        # Empty or too long
+        if not line_stripped or len(line_stripped) > 100:
+            return False
+            
+        # Word count heuristic (sections are typically short phrases)
+        word_count = len(line_stripped.split())
+        if word_count > 6 or word_count < 1:
+            return False
+            
+        # ALL CAPS → strong signal for section headers
+        if line_stripped.isupper() and len(line_stripped) > 3:
+            return True
+            
+        # Ends with colon or dash (common section markers)
+        if line_stripped.endswith(':') or line_stripped.endswith('-'):
+            return True
+            
+        # Contains common section keywords (simplified check)
+        lower_line = line_stripped.lower()
+        if any(keyword in lower_line for keyword in ['experience', 'education', 'skills', 'projects', 'summary']):
+            return True
+            
+        return False
+    
+    @staticmethod
+    def detect_headers(lines: List[str]) -> List[int]:
+        """
+        Detect header lines from a list of text lines.
+        
+        Args:
+            lines: List of text lines from document
+            
+        Returns:
+            List of line numbers (indices) that appear to be headers
+        """
+        return [i for i, line in enumerate(lines) if HeaderDetector.is_header_line(line)]
+    
+    @staticmethod
+    def group_content_by_headers(lines: List[str]) -> List[Dict[str, Any]]:
+        """
+        Group content by detected headers for section extraction.
+        
+        Args:
+            lines: List of text lines from document
+            
+        Returns:
+            List of sections with header line number and content
+        """
+        header_lines = HeaderDetector.detect_headers(lines)
+        sections = []
+        
+        for i, header_line_num in enumerate(header_lines):
+            # Determine content boundaries
+            start_line = header_line_num
+            end_line = header_lines[i + 1] if i + 1 < len(header_lines) else len(lines)
+            
+            # Extract header text and content
+            header_text = lines[start_line].strip()
+            content_lines = lines[start_line + 1:end_line]
+            
+            # Clean content (remove empty lines at start/end)
+            while content_lines and not content_lines[0].strip():
+                content_lines.pop(0)
+            while content_lines and not content_lines[-1].strip():
+                content_lines.pop()
+                
+            sections.append({
+                'header_line': start_line,
+                'header_text': header_text,
+                'content': content_lines,
+                'content_text': '\n'.join(content_lines)
+            })
+            
+        return sections
 
-    # Multilingual keywords for section detection
-    SECTION_KEYWORDS = {
-        SectionType.WORK_EXPERIENCE: {
+
+class RegexSectionExtractor:
+    """
+    Regex-based section extraction (NoLLMExtractor from cv_reading_order.py).
+    Multilingual section header patterns with confidence scoring.
+    Accuracy: ~75-80%
+    Speed: Very fast (< 100ms)
+    """
+
+    # Multilingual section header patterns
+    SECTION_PATTERNS = {
+        "personal_info": {
             "en": [
-                "work experience",
-                "experience",
-                "employment",
-                "professional experience",
-                "career",
-                "work history",
-                "positions held",
-                "job history",
+                r"^(?:personal\s+info|contact\s+info|profile|personal\s+details)",
+                r"^(?:name|email|phone|location|address)",
             ],
             "vi": [
-                "kinh nghiệm làm việc",
-                "kinh nghiệm",
-                "quá trình công tác",
-                "công việc",
-                "lịch sử công việc",
-                "vị trí công việc",
+                r"^(?:thông tin cá nhân|thông tin liên hệ|hồ sơ cá nhân)",
             ],
         },
-        SectionType.EDUCATION: {
+        "summary": {
             "en": [
-                "education",
-                "academic background",
-                "academic",
-                "qualification",
-                "degree",
-                "school",
-                "university",
-                "college",
-                "training",
+                r"^(?:summary|professional\s+summary|objective|profile\s+summary)",
+                r"^(?:about|about\s+me|background)",
             ],
             "vi": [
-                "học vấn",
-                "trình độ học vấn",
-                "nền tảng học vấn",
-                "đào tạo",
-                "bằng cấp",
-                "trường",
-                "đại học",
-                "học tập",
+                r"^(?:tóm tắt|tóm tắt chuyên môn|mục tiêu)",
             ],
         },
-        SectionType.SKILLS: {
+        "experience": {
             "en": [
-                "skills",
-                "technical skills",
-                "competencies",
-                "expertise",
-                "proficiencies",
-                "capabilities",
-                "technical expertise",
-                "core competencies",
+                r"^(?:work\s+experience|professional\s+experience|employment|career|positions?)",
+                r"^(?:experience|work\s+history|job\s+history)",
             ],
             "vi": [
-                "kỹ năng",
-                "kỹ năng chuyên môn",
-                "kỹ năng kỹ thuật",
-                "năng lực",
-                "chuyên môn",
-                "khả năng",
+                r"^(?:kinh nghiệm làm việc|kinh nghiệm|quá trình công tác)",
+                r"^(?:công việc|lịch sử công việc|vị trí công việc)",
             ],
         },
-        SectionType.PROJECTS: {
+        "education": {
             "en": [
-                "projects",
-                "personal projects",
-                "project experience",
-                "portfolio",
-                "notable projects",
+                r"^(?:education|academic\s+background|academic|qualification|degree)",
+                r"^(?:school|university|college|training)",
             ],
             "vi": [
-                "dự án",
-                "các dự án",
-                "dự án cá nhân",
-                "dự án kinh nghiệm",
-                "danh sách dự án",
+                r"^(?:học vấn|trình độ học vấn|nền tảng học vấn)",
+                r"^(?:đào tạo|bằng cấp|trường|đại học)",
             ],
         },
-        SectionType.SUMMARY: {
+        "skills": {
             "en": [
-                "summary",
-                "professional summary",
-                "objective",
-                "profile",
-                "about",
-                "introduction",
-                "career summary",
-                "professional profile",
+                r"^(?:skills|technical\s+skills|competencies|expertise|proficiencies)",
+                r"^(?:capabilities|technical\s+expertise|technical\s+knowledge)",
             ],
             "vi": [
-                "tóm tắt",
-                "tóm tắt chuyên môn",
-                "mục tiêu",
-                "mục tiêu nghề nghiệp",
-                "giới thiệu",
-                "hồ sơ",
+                r"^(?:kỹ năng|kỹ năng kỹ thuật|năng lực|chuyên môn)",
             ],
         },
-        SectionType.CERTIFICATIONS: {
+        "projects": {
             "en": [
-                "certifications",
-                "certificates",
-                "licenses",
-                "professional certifications",
-                "credentials",
+                r"^(?:projects?|portfolio|case\s+studies?)",
+                r"^(?:notable\s+projects?|key\s+projects?)",
             ],
             "vi": [
-                "chứng chỉ",
-                "chứng chỉ chuyên môn",
-                "giấy chứng nhận",
-                "bằng cấp",
-                "tài chính",
+                r"^(?:dự án|danh sách dự án|các dự án)",
             ],
         },
-        SectionType.LANGUAGES: {
+        "certifications": {
             "en": [
-                "languages",
-                "language skills",
-                "language proficiency",
+                r"^(?:certifications?|credentials?|licenses?)",
+                r"^(?:professional\s+certifications?|training\s+certifications?)",
             ],
             "vi": [
-                "ngôn ngữ",
-                "kỹ năng ngôn ngữ",
-                "trình độ ngôn ngữ",
+                r"^(?:chứng chỉ|chứng chỉ chuyên môn|bằng cấp chứng chỉ)",
             ],
         },
-        SectionType.AWARDS: {
+        "languages": {
             "en": [
-                "awards",
-                "achievements",
-                "honors",
-                "recognition",
-                "prizes",
+                r"^(?:languages?|language\s+proficiency|multilingual)",
             ],
             "vi": [
-                "giải thưởng",
-                "thành tích",
-                "danh hiệu",
-                "công nhận",
+                r"^(?:ngôn ngữ|khả năng ngôn ngữ)",
             ],
         },
-        SectionType.INTERESTS: {
+        "awards": {
             "en": [
-                "interests",
-                "hobbies",
-                "personal interests",
-                "hobbies and interests",
+                r"^(?:awards?|recognitions?|honors?)",
             ],
             "vi": [
-                "sở thích",
-                "sở thích cá nhân",
-                "hoạt động",
+                r"^(?:giải thưởng|danh dự)",
+            ],
+        },
+        "interests": {
+            "en": [
+                r"^(?:interests?|hobbies?|activities?)",
+            ],
+            "vi": [
+                r"^(?:sở thích|hoạt động|sở thích cá nhân)",
             ],
         },
     }
 
-    @staticmethod
-    def normalize_for_matching(text: str) -> str:
-        """Normalize text for section matching."""
-        from .text_cleaner import TextCleaner
+    def __init__(self):
+        self.compiled_patterns = self._compile_patterns()
 
-        # Remove accents for better matching
-        text = TextCleaner.remove_accents(text)
-        # Lowercase
-        text = text.lower()
-        # Remove extra whitespace and punctuation
-        text = re.sub(r'[:\-_\s]+', ' ', text).strip()
-        return text
+    def _compile_patterns(self) -> Dict[str, List[re.Pattern]]:
+        """Compile all regex patterns."""
+        compiled = {}
+        for section_type, langs in self.SECTION_PATTERNS.items():
+            compiled[section_type] = []
+            for lang, patterns in langs.items():
+                for pattern in patterns:
+                    try:
+                        compiled[section_type].append(re.compile(pattern, re.IGNORECASE | re.MULTILINE))
+                    except re.error as e:
+                        import logging
+                        logging.warning(f"Invalid regex pattern for {section_type}: {e}")
+        return compiled
 
-    @staticmethod
-    def is_section_header_heuristic(line: str) -> Tuple[bool, float]:
+    def extract(self, markdown_dump: str) -> Dict[str, ExtractedSection]:
         """
-        Heuristic checks for section header candidates.
-
-        Returns:
-            (is_header: bool, confidence: float)
-        """
-        line_stripped = line.strip()
-
-        # Empty or too long
-        if not line_stripped or len(line_stripped) > 100:
-            return False, 0.0
-
-        # Word count heuristic (sections are typically short)
-        word_count = len(line_stripped.split())
-        if word_count > 6:
-            return False, 0.0
-
-        confidence = 0.0
-
-        # ALL CAPS → strong signal
-        if line_stripped.isupper() and len(line_stripped) > 3:
-            confidence += 0.4
-
-        # Ends with colon
-        if line_stripped.endswith(':'):
-            confidence += 0.2
-
-        # Standalone line (surrounded by content)
-        if len(line_stripped) < 50 and word_count <= 4:
-            confidence += 0.2
-
-        # Check for common section starters
-        lower_line = line_stripped.lower()
-        if any(
-            starter in lower_line
-            for starter in ['experience', 'education', 'skills', 'projects', 'summary']
-        ):
-            confidence += 0.2
-
-        return confidence > 0.0, confidence
-
-    @staticmethod
-    def fuzzy_match_keywords(
-        line: str, keywords: List[str], threshold: int = 80
-    ) -> Tuple[float, str]:
-        """
-        Fuzzy match line against keyword list.
-
-        Returns:
-            (max_score: float, best_match: str)
-        """
-        if not fuzz:
-            # Fallback: exact substring matching
-            normalized_line = SectionDetector.normalize_for_matching(line)
-            for kw in keywords:
-                normalized_kw = SectionDetector.normalize_for_matching(kw)
-                if normalized_kw in normalized_line:
-                    return 100.0, kw
-            return 0.0, ""
-
-        normalized_line = SectionDetector.normalize_for_matching(line)
-
-        best_score = 0.0
-        best_match = ""
-
-        for keyword in keywords:
-            # Try partial ratio for better matching
-            score = fuzz.token_set_ratio(normalized_line, keyword)
-            if score > best_score:
-                best_score = score
-                best_match = keyword
-
-        return float(best_score), best_match
-
-    @staticmethod
-    def detect_section_type(line: str) -> Tuple[Optional[SectionType], float]:
-        """
-        Detect section type using hybrid strategy.
-
-        Returns:
-            (section_type: SectionType or None, confidence: float)
-        """
-        # Step 1: Heuristic check
-        is_header, heuristic_confidence = SectionDetector.is_section_header_heuristic(
-            line
-        )
-        if not is_header:
-            return None, 0.0
-
-        best_type = None
-        best_score = 0.0
-        best_confidence = 0.0
-
-        # Step 2: Fuzzy match against all section types
-        for section_type, keywords_dict in SectionDetector.SECTION_KEYWORDS.items():
-            all_keywords = keywords_dict.get("en", []) + keywords_dict.get("vi", [])
-
-            fuzzy_score, _ = SectionDetector.fuzzy_match_keywords(line, all_keywords)
-
-            if fuzzy_score >= 80:  # Threshold for fuzzy match
-                # Combine heuristic + fuzzy scores
-                combined_score = (heuristic_confidence * 0.3) + (fuzzy_score / 100.0 * 0.7)
-
-                if combined_score > best_score:
-                    best_score = combined_score
-                    best_type = section_type
-                    best_confidence = combined_score
-
-        return best_type, best_confidence
-
-    @staticmethod
-    def detect_sections(lines: List[str]) -> List[Section]:
-        """
-        Detect all sections in a CV line list.
+        Extract sections from markdown dump using regex patterns with lightweight header pre-filtering.
 
         Args:
-            lines: List of text lines from CV
+            markdown_dump: Intermediate markdown from Step 4
 
         Returns:
-            List of detected sections with metadata
+            Dict[section_type] → ExtractedSection
         """
-        sections = []
+        lines = markdown_dump.split("\n")
+        sections: Dict[str, ExtractedSection] = {}
+        current_section = None
+        current_content = []
+        confidence_accumulator = {}
+
+        # Use lightweight header detection as pre-filter for performance
+        potential_headers = HeaderDetector.detect_headers(lines)
+        potential_header_lines = set(potential_headers)
 
         for line_num, line in enumerate(lines):
-            section_type, confidence = SectionDetector.detect_section_type(line)
+            line_stripped = line.strip()
 
-            if section_type is not None:
-                section = Section(
-                    line_number=line_num,
-                    type=section_type,
-                    raw_text=line.strip(),
-                    confidence=confidence,
+            # Quick pre-filter: only check regex patterns if line looks like a header
+            matched_section = None
+            if line_num in potential_header_lines:
+                matched_section = self._match_section_header(line_stripped)
+
+            if matched_section:
+                # Save previous section
+                if current_section:
+                    content = "\n".join(current_content).strip()
+                    if content:
+                        sections[current_section] = ExtractedSection(
+                            section_type=current_section,
+                            content=content,
+                            confidence=confidence_accumulator.get(current_section, 0.75),
+                            header_line=line_num - len(current_content) - 1,
+                            header_text=current_section
+                        )
+
+                # Start new section
+                current_section = matched_section
+                current_content = []
+                confidence_accumulator[current_section] = 0.80  # Higher confidence for matched headers
+            elif current_section and line_stripped and not line_stripped.startswith("="):
+                # Add content to current section (skip separator lines)
+                if not line_stripped.startswith("PAGE:") and not line_stripped.startswith("TYPE:"):
+                    current_content.append(line)
+
+        # Don't forget last section
+        if current_section:
+            content = "\n".join(current_content).strip()
+            if content:
+                sections[current_section] = ExtractedSection(
+                    section_type=current_section,
+                    content=content,
+                    confidence=confidence_accumulator.get(current_section, 0.75),
+                    header_line=len(lines) - len(current_content) - 1,
+                    header_text=current_section
                 )
-                sections.append(section)
 
+        import logging
+        logging.info(f"Regex extraction found {len(sections)} sections")
         return sections
 
-    @staticmethod
-    def extract_section_content(
-        lines: List[str], section_start: int, section_end: Optional[int] = None
-    ) -> List[str]:
+    def _match_section_header(self, text: str) -> Optional[str]:
         """
-        Extract content between section boundaries.
-
-        Args:
-            lines: All CV lines
-            section_start: Starting line (inclusive, after header)
-            section_end: Ending line (exclusive) or None for all remaining
-
-        Returns:
-            Section content lines
+        Match text against section header patterns.
+        Returns section type if match found, otherwise None.
         """
-        if section_end is None:
-            section_end = len(lines)
+        for section_type, patterns in self.compiled_patterns.items():
+            for pattern in patterns:
+                if pattern.search(text):
+                    return section_type
+        return None
 
-        return lines[section_start + 1 : section_end]
 
-    @staticmethod
-    def group_sections_with_content(
-        lines: List[str],
-    ) -> Dict[str, Dict]:
+class SectionDetector:
+    """
+    Unified section detection interface combining header detection and regex extraction.
+    Provides both simple header detection and comprehensive section extraction.
+    """
+
+    def __init__(self):
+        self.header_detector = HeaderDetector()
+        self.regex_extractor = RegexSectionExtractor()
+
+    def detect_headers(self, lines: List[str]) -> List[int]:
+        """Detect header lines using simple heuristics."""
+        return self.header_detector.detect_headers(lines)
+
+    def extract_sections(self, markdown_dump: str) -> Dict[str, ExtractedSection]:
+        """Extract sections using regex patterns."""
+        return self.regex_extractor.extract(markdown_dump)
+
+    def group_content_by_headers(self, lines: List[str]) -> List[Dict[str, Any]]:
+        """Group content by detected headers."""
+        return self.header_detector.group_content_by_headers(lines)
+
+    def extract_with_confidence(self, markdown_dump: str) -> Tuple[Dict[str, ExtractedSection], float]:
         """
-        Group detected sections with their content.
-
-        Returns:
-            Dict[section_name] = {
-                'header_line': int,
-                'type': SectionType,
-                'confidence': float,
-                'content': List[str],
-            }
+        Extract sections with overall confidence scoring.
+        Returns sections and average confidence score.
         """
-        sections = SectionDetector.detect_sections(lines)
-
+        sections = self.extract_sections(markdown_dump)
         if not sections:
-            return {}
-
-        grouped = {}
-
-        for i, section in enumerate(sections):
-            # Determine content boundaries
-            content_start = section.line_number
-            content_end = (
-                sections[i + 1].line_number
-                if i + 1 < len(sections)
-                else len(lines)
-            )
-
-            # Skip the header line itself
-            section_content = lines[content_start + 1 : content_end]
-
-            # Remove empty lines at start/end
-            while section_content and not section_content[0].strip():
-                section_content.pop(0)
-            while section_content and not section_content[-1].strip():
-                section_content.pop()
-
-            grouped[section.type.value] = {
-                "header_line": section.line_number,
-                "type": section.type,
-                "confidence": section.confidence,
-                "raw_header": section.raw_text,
-                "content": section_content,
-            }
-
-        return grouped
+            return {}, 0.0
+        
+        avg_confidence = sum(section.confidence for section in sections.values()) / len(sections)
+        return sections, avg_confidence
+    

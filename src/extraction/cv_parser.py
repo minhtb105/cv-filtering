@@ -20,11 +20,9 @@ from pathlib import Path
 from dataclasses import dataclass
 import json
 
-from src.extraction.pdf_extractor import PDFExtractor
 from src.extraction.cv_pipeline_integration import CVProcessingPipeline, PipelineConfig
-from src.extraction.cv_reading_order import CVReadingOrder
 from src.extraction.text_cleaner import TextCleaner
-from src.extraction.section_detector import SectionDetector, SectionType
+from src.extraction.section_detector import HeaderDetector
 from src.extraction.markdown_generator import MarkdownGenerator, CVMarkdownConfig
 from src.extraction.llm_extractor import LLMExtractor, LLMExtractionConfig
 
@@ -49,7 +47,7 @@ class CVParser:
     def __init__(self, config: Optional[CVParsingConfig] = None):
         self.config = config or CVParsingConfig()
         self.text_cleaner = TextCleaner()
-        self.section_detector = SectionDetector()
+        self.header_detector = HeaderDetector()
 
         if self.config.use_llm_extraction:
             llm_config = self.config.llm_config or LLMExtractionConfig()
@@ -249,7 +247,7 @@ class CVParser:
 
     def _extract_summary_from_sections(self, sections_grouped: Dict) -> str:
         """Extract summary/objective from detected sections."""
-        summary_section = sections_grouped.get(SectionType.SUMMARY.value, {})
+        summary_section = sections_grouped.get("summary", {})
         if summary_section and summary_section.get("content"):
             content = summary_section["content"]
             return " ".join(content[:3]) if content else ""
@@ -266,42 +264,37 @@ class CVParser:
         }
 
         # Work experience: parse lines into structured format
-        if SectionType.WORK_EXPERIENCE.value in sections_grouped:
-            exp_lines = sections_grouped[SectionType.WORK_EXPERIENCE.value]["content"]
+        if "experience" in sections_grouped:
+            exp_lines = sections_grouped["experience"]["content"]
             # Simple parsing: each entry might be multi-line
             # Group by company lines (heuristic: all caps or title case)
             exp_blocks = self._parse_experience_blocks(exp_lines)
             structured["work_experience"] = exp_blocks
 
         # Education
-        if SectionType.EDUCATION.value in sections_grouped:
-            edu_lines = sections_grouped[SectionType.EDUCATION.value]["content"]
+        if "education" in sections_grouped:
+            edu_lines = sections_grouped["education"]["content"]
             edu_blocks = self._parse_education_blocks(edu_lines)
             structured["education"] = edu_blocks
 
         # Skills
-        if SectionType.SKILLS.value in sections_grouped:
-            skill_lines = sections_grouped[SectionType.SKILLS.value]["content"]
+        if "skills" in sections_grouped:
+            skill_lines = sections_grouped["skills"]["content"]
             skill_dict = self._parse_skills(skill_lines)
             structured["skills"] = skill_dict
 
         # Projects
-        if SectionType.PROJECTS.value in sections_grouped:
-            proj_lines = sections_grouped[SectionType.PROJECTS.value]["content"]
+        if "projects" in sections_grouped:
+            proj_lines = sections_grouped["projects"]["content"]
             proj_blocks = self._parse_project_blocks(proj_lines)
             structured["projects"] = proj_blocks
 
         # Certifications, Languages, Awards, Interests
         cert_dict = {}
-        for section_type in [
-            SectionType.CERTIFICATIONS,
-            SectionType.LANGUAGES,
-            SectionType.AWARDS,
-            SectionType.INTERESTS,
-        ]:
-            if section_type.value in sections_grouped:
-                lines = sections_grouped[section_type.value]["content"]
-                cert_dict[section_type.value] = [l.strip() for l in lines if l.strip()]
+        for section_type in ["certifications", "languages", "awards", "interests"]:
+            if section_type in sections_grouped:
+                lines = sections_grouped[section_type]["content"]
+                cert_dict[section_type] = [l.strip() for l in lines if l.strip()]
 
         structured["certifications"] = cert_dict
 

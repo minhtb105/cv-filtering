@@ -23,6 +23,8 @@ from src.models.domain.candidate import (
     LocationFormat,
     CEFRLEVEL,
 )
+from src.models.domain.project import LLMProject
+from src.models.domain.project_validator import ProjectValidator
 from src.models.validation.enums import ExtractionMethod
 from src.models.domain.cv_version import ParsingMetadata
 
@@ -43,7 +45,7 @@ class LLMExtractionConfig:
 
 
 class OllamaClient:
-    """Wrapper for Ollama API calls."""
+    """Wrapper for Ollama API calls with robust error handling and fallback strategy."""
 
     def __init__(self, base_url: str = "http://localhost:11434", timeout: int = 30):
         self.base_url = base_url.rstrip("/")
@@ -68,21 +70,23 @@ class OllamaClient:
         prompt: str,
         model: str = "qwen2.5-coder:3b",
         temperature: float = 0.1,
-    ) -> Optional[Dict[str, Any]]:
+        raw_text: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
-        Call Ollama to extract JSON from text.
+        Call Ollama to extract JSON from text with fallback strategy.
 
         Args:
             prompt: Prompt with extraction task
             model: Model name to use
             temperature: Sampling temperature
+            raw_text: Original text for fallback if JSON is invalid
 
         Returns:
-            Parsed JSON response or None if failed
+            Dict with status='success' and JSON data, or status='partial' with raw_text
         """
         if not self.available:
-            logger.warning("Ollama not available, skipping LLM extraction")
-            return None
+            logger.warning("Ollama not available, returning partial fallback")
+            return self._create_fallback_response(raw_text or "")
 
         try:
             import requests
@@ -109,7 +113,11 @@ class OllamaClient:
                 try:
                     # Try direct JSON parsing
                     extracted_json = json.loads(response_text)
-                    return extracted_json
+                    return {
+                        "status": "success",
+                        "data": extracted_json,
+                        "method": "llm_full",
+                    }
                 except json.JSONDecodeError:
                     # Try to extract JSON block from text
                     import re
@@ -117,21 +125,41 @@ class OllamaClient:
                     match = re.search(r"\{.*\}", response_text, re.DOTALL)
                     if match:
                         try:
-                            return json.loads(match.group())
+                            extracted_json = json.loads(match.group())
+                            return {
+                                "status": "success",
+                                "data": extracted_json,
+                                "method": "llm_parsed",
+                            }
                         except json.JSONDecodeError:
                             logger.warning(
                                 f"Failed to parse JSON from LLM response: {response_text[:100]}"
                             )
-                            return None
-
-                return None
+                            # Fallback to partial with raw text
+                            return self._create_fallback_response(raw_text or response_text)
+                    
+                    # Fallback to partial with raw text
+                    return self._create_fallback_response(raw_text or response_text)
             else:
                 logger.error(f"Ollama API error: {response.status_code}")
-                return None
+                return self._create_fallback_response(raw_text or "")
 
+        except requests.Timeout:
+            logger.error(f"LLM extraction timeout after {self.timeout}s, using fallback")
+            return self._create_fallback_response(raw_text or "")
         except Exception as e:
-            logger.error(f"LLM extraction failed: {e}")
-            return None
+            logger.error(f"LLM extraction failed: {e}, using fallback")
+            return self._create_fallback_response(raw_text or "")
+
+    def _create_fallback_response(self, raw_text: str) -> Dict[str, Any]:
+        """Create fallback response when LLM fails or times out."""
+        return {
+            "status": "partial",
+            "method": "fallback",
+            "raw_text": raw_text,
+            "data": None,
+            "error": "LLM extraction failed or unavailable"
+        }
 
 
 class EnhancedLLMExtractor:
@@ -276,41 +304,75 @@ Return ONLY valid JSON following the schema provided. No explanations."""
         self.config = config or LLMExtractionConfig()
         self.client = OllamaClient(self.config.base_url, self.config.timeout)
 
-    def extract(self, cv_markdown: str, language: Optional[str] = None) -> Optional[CandidateProfile]:
+    def extract(self, cv_markdown: str, language: Optional[str] = None) -> Dict[str, Any]:
         """
         Extract structured data from markdown CV using enhanced schemas.
+        Supports fallback when LLM unavailable or extraction fails.
 
         Args:
-            cv_markdown: Structured markdown from CV
+            cv_markdown: Plain ordered text from CV (with # headers and markdown tables)
             language: Detected language code (vi, en, etc)
 
         Returns:
-            CandidateProfile or None
+            Dict with status='success' (data extracted), 'partial' (raw_text + fallback),
+            or 'error' (no data extracted)
         """
-        if not self.client.available:
-            logger.info("LLM extraction unavailable (Ollama not running)")
-            return None
-
         prompt = self.EXTRACTION_PROMPT.format(cv_text=cv_markdown)
 
         logger.info(f"Extracting with model: {self.config.model_name}")
 
-        result = self.client.extract_json(
-            prompt, self.config.model_name, self.config.temperature
+        # Call LLM with fallback strategy built-in
+        llm_result = self.client.extract_json(
+            prompt=prompt,
+            model=self.config.model_name,
+            temperature=self.config.temperature,
+            raw_text=cv_markdown,  # Pass raw text for fallback
         )
 
-        if result is None:
-            if self.config.use_fallback:
-                logger.info("LLM extraction failed, skipping (fallback disabled)")
-            return None
+        # Handle result (either success with JSON or partial with raw_text)
+        if llm_result.get("status") == "success":
+            extracted_data = llm_result.get("data", {})
+            try:
+                profile = self._build_and_validate_profile(extracted_data, language)
+                return {
+                    "status": "success",
+                    "data": profile,
+                    "method": llm_result.get("method", "llm"),
+                    "fallback": False
+                }
+            except Exception as e:
+                logger.error(f"Profile validation failed: {e}")
+                # Return partial response with raw_text for fallback processing
+                return {
+                    "status": "partial",
+                    "data": None,
+                    "raw_text": cv_markdown,
+                    "method": "fallback",
+                    "fallback": True,
+                    "error": f"Validation failed: {str(e)}"
+                }
 
-        # Validate and normalize the extracted data
-        try:
-            profile = self._build_and_validate_profile(result, language)
-            return profile
-        except Exception as e:
-            logger.error(f"Profile validation failed: {e}")
-            return None
+        elif llm_result.get("status") == "partial":
+            # LLM failed or returned invalid JSON, return raw_text for post-processing
+            logger.warning(f"LLM extraction partial: {llm_result.get('error')}")
+            return {
+                "status": "partial",
+                "data": None,
+                "raw_text": llm_result.get("raw_text", cv_markdown),
+                "method": "fallback",
+                "fallback": True,
+                "error": llm_result.get("error", "Unknown error")
+            }
+
+        else:
+            # Unknown status, return error
+            return {
+                "status": "error",
+                "data": None,
+                "method": "none",
+                "fallback": False,
+                "error": "Unknown extraction status"
+            }
 
     def _build_and_validate_profile(self, data: Dict[str, Any], language: Optional[str]) -> CandidateProfile:
         """Build and validate CandidateProfile from extracted data"""
@@ -440,12 +502,54 @@ Return ONLY valid JSON following the schema provided. No explanations."""
 
     def _normalize_project(self, data: Dict) -> Project:
         """Normalize project data"""
+        # Try to create LLMProject first for enhanced validation
+        try:
+            llm_project = LLMProject(
+                name=data.get("name", "Unknown"),
+                company=data.get("company", "Unknown"),
+                description=data.get("description", ""),
+                technologies=data.get("tech_stack", []),
+                metrics=data.get("metrics", []),
+                role=data.get("role", "Team member"),
+                complexity_level=data.get("complexity_level", "medium"),
+                ownership=data.get("ownership", "contributed"),
+                confidence=data.get("confidence", 0.75),
+                extraction_method="llm"
+            )
+            
+            # Validate the project
+            validator = ProjectValidator()
+            validation_result = validator.validate_project(llm_project)
+            
+            if validation_result.is_valid:
+                # Convert LLMProject to Project
+                return Project(
+                    name=llm_project.name,
+                    role=llm_project.role,
+                    start_date=data.get("start_date"),
+                    end_date=data.get("end_date"),
+                    description=llm_project.description,
+                    tech_stack=llm_project.technologies,
+                    skills_used=data.get("skills_used", []),
+                    contributions=data.get("contributions", []),
+                    metrics=llm_project.metrics,
+                    ownership=llm_project.ownership,
+                    complexity_score=llm_project.get_complexity_score(),
+                    impact_score=data.get("impact_score", 3),
+                    evidence_strength=validation_result.confidence
+                )
+            else:
+                logger.warning(f"Project validation failed: {validation_result.errors}")
+        except Exception as e:
+            logger.warning(f"Failed to create LLMProject: {e}")
+        
+        # Fallback to basic Project creation
         return Project(
             name=data.get("name", "Unknown"),
             role=data.get("role", "Team member"),
             start_date=data.get("start_date"),
             end_date=data.get("end_date"),
-            description=data.get("description"),
+            description=data.get("description", ""),
             tech_stack=data.get("tech_stack", []),
             skills_used=data.get("skills_used", []),
             contributions=data.get("contributions", []),
