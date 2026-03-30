@@ -21,7 +21,7 @@ class CacheEntry:
     
     def is_expired(self) -> bool:
         """Check if cache entry has expired"""
-        return datetime.now() - self.timestamp > timedelta(seconds=self.ttl_seconds)
+        return datetime.now(datetime.timezone.utc) - self.timestamp > timedelta(seconds=self.ttl_seconds)
     
     def mark_hit(self):
         """Record cache hit"""
@@ -71,7 +71,7 @@ class ExtractionCache:
         
         self.cache[key] = CacheEntry(
             value=value,
-            timestamp=datetime.now(),
+            timestamp=datetime.now(datetime.timezone.utc),
             ttl_seconds=ttl
         )
     
@@ -109,7 +109,7 @@ class BatchExtractor:
         batch_item = {
             'cv_text': cv_text,
             'fields': fields,
-            'timestamp': datetime.now()
+            'timestamp': datetime.now(datetime.timezone.utc)
         }
         self.batch_queue.append(batch_item)
         return len(self.batch_queue) - 1
@@ -126,7 +126,7 @@ class BatchExtractor:
         
         if len(self.batch_queue) > 0:
             oldest = self.batch_queue[0]['timestamp']
-            if datetime.now() - oldest > timedelta(seconds=5):
+            if datetime.now(datetime.timezone.utc) - oldest > timedelta(seconds=5):
                 return True
         
         return False

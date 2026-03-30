@@ -29,7 +29,7 @@ class CachedValue:
     def __init__(self, value: Any, cache_hit: bool = True):
         self.value = value
         self.cache_hit = cache_hit
-        self.timestamp = datetime.utcnow().isoformat()
+        self.timestamp = datetime.now(datetime.timezone.utc).isoformat()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""

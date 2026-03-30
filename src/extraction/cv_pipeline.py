@@ -25,7 +25,7 @@ class CVProcessingPipeline:
     def process(self, pdf_path: str, translate: bool = True) -> Dict[str, Any]:
         """Process a CV through the full pipeline"""
         cv_id = str(uuid.uuid4())
-        version = f"v1_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        version = f"v1_{datetime.now(datetime.timezone.utc).strftime('%Y%m%d%H%M%S')}"
 
         pdf_result = self.pdf_extractor.extract(pdf_path)
         if not pdf_result.is_success:

@@ -153,7 +153,7 @@ class HybridSectionExtractor:
 
         markdown_lines.append(f"# {language.upper()} - CV Extraction")
         markdown_lines.append("")
-        markdown_lines.append(f"**Extracted:** {datetime.utcnow().isoformat()}")
+        markdown_lines.append(f"**Extracted:** {datetime.now(datetime.timezone.utc).isoformat()}")
         markdown_lines.append("")
 
         section_order = ["summary", "experience", "projects", "skills", "education", "certifications", "languages", "contact"]

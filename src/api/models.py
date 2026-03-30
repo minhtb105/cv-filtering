@@ -145,4 +145,4 @@ class ErrorResponse(BaseModel):
     """Error response."""
     error: str
     detail: Optional[str] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=datetime.now(datetime.timezone.utc))

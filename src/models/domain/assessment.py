@@ -42,7 +42,7 @@ class MatchingScore(BaseModel):
     match_percentage: float = Field(default=0.0, ge=0, le=100, description="Match percentage (0-100)")
     
     # Metadata
-    calculated_at: datetime = Field(default_factory=datetime.utcnow, description="When calculated")
+    calculated_at: datetime = Field(default_factory=lambda: datetime.now(datetime.timezone.utc), description="When calculated")
     matching_model_version: str = Field(default="1.0", description="Matching model version")
     
     class Config:
@@ -84,7 +84,7 @@ class Assessment(BaseModel):
     decision_reasoning: str = Field(..., description="Why this decision was made")
     risk_flags: List['RiskFlag'] = Field(default_factory=list, description="Identified risks")
     recommendations: List[str] = Field(default_factory=list, description="Recommendations")
-    assessed_at: datetime = Field(default_factory=datetime.utcnow, description="Assessment timestamp")
+    assessed_at: datetime = Field(default_factory=lambda: datetime.now(datetime.timezone.utc), description="Assessment timestamp")
     model_version: str = Field(..., description="Model version used")
     
     class Config:

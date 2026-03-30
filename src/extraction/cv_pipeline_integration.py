@@ -25,8 +25,6 @@ try:
     from .pdf_extractor import ExtractionResult
 except ImportError:
     try:
-        import sys
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent))
         from pdf_extractor import ExtractionResult
     except ImportError:
         # Define it locally if not available

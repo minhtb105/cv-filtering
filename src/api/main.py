@@ -62,7 +62,7 @@ composite_scorer = CompositeScorer()
 rescoring_engine = RescoringEngine(composite_scorer, score_repo, version_manager)
 
 # Track metrics
-start_time = datetime.utcnow()
+start_time = datetime.now(datetime.timezone.utc)
 metrics = {
     "total_scores": 0,
     "scoring_times": [],
@@ -121,7 +121,7 @@ async def score_cv(request: DetailedScoreRequest):
             interview_score=score_data["interview_score"],
             composite_score=score_data["composite_score"],
             breakdown=ScoreBreakdown(**score_data["breakdown"]),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.timezone.utc),
             cached=cached is not None,
             cache_hit=cached is not None,
         )
@@ -365,7 +365,7 @@ async def get_metrics():
         cache_stats = cache_client.get_stats()
         queue_stats = rescoring_engine.get_queue_stats()
         
-        uptime = (datetime.utcnow() - start_time).total_seconds()
+        uptime = (datetime.now(datetime.timezone.utc) - start_time).total_seconds()
         
         return MetricsResponse(
             cache_hit_rate=float(cache_stats.get("hit_rate", "0%").rstrip("%")),

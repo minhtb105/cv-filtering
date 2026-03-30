@@ -28,7 +28,7 @@ class DateRange:
         if not self.start_date:
             return 0
         
-        end = self.end_date if self.end_date else datetime.now()
+        end = self.end_date if self.end_date else datetime.now(datetime.timezone.utc)
         diff = relativedelta(end, self.start_date)
         return diff.years * 12 + diff.months
     
@@ -296,7 +296,7 @@ class ExperienceEngine:
             return []
         
         # Sort by start date
-        sorted_entries = sorted(entries, key=lambda e: e.date_range.start_date or datetime.now())
+        sorted_entries = sorted(entries, key=lambda e: e.date_range.start_date or datetime.now(datetime.timezone.utc))
         
         gaps = []
         
@@ -328,7 +328,7 @@ class ExperienceEngine:
                         'company1': entry1.company,
                         'company2': entry2.company,
                         'period': f"{max(entry1.date_range.start_date, entry2.date_range.start_date).strftime('%Y-%m')} to "
-                                 f"{min(entry1.date_range.end_date or datetime.now(), entry2.date_range.end_date or datetime.now()).strftime('%Y-%m')}"
+                                 f"{min(entry1.date_range.end_date or datetime.now(datetime.timezone.utc), entry2.date_range.end_date or datetime.now(datetime.timezone.utc)).strftime('%Y-%m')}"
                     })
         
         return overlaps
@@ -340,8 +340,8 @@ class ExperienceEngine:
         if not range1.start_date or not range2.start_date:
             return False
         
-        end1 = range1.end_date or datetime.now()
-        end2 = range2.end_date or datetime.now()
+        end1 = range1.end_date or datetime.now(datetime.timezone.utc)
+        end2 = range2.end_date or datetime.now(datetime.timezone.utc)
         
         return range1.start_date <= end2 and range2.start_date <= end1
     
@@ -351,7 +351,7 @@ class ExperienceEngine:
         if not entries:
             return {'progression': 'unknown'}
         
-        sorted_entries = sorted(entries, key=lambda e: e.date_range.start_date or datetime.now())
+        sorted_entries = sorted(entries, key=lambda e: e.date_range.start_date or datetime.now(datetime.timezone.utc))
         
         # Extract position levels
         position_levels = []

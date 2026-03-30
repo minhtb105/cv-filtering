@@ -235,7 +235,7 @@ class MarkdownGenerator:
             config = CVMarkdownConfig()
 
         timestamp = (
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
             if config.include_timestamps
             else ""
         )

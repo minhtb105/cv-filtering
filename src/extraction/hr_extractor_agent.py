@@ -83,7 +83,7 @@ class HRExtractorAgent:
                 'skills': projects.get('skills', []),
                 'extraction_status': 'success',
                 'evidence': evidence_report,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now(datetime.timezone.utc).isoformat()
             }
             
             return result
@@ -334,7 +334,7 @@ class HRExtractorAgent:
             'skills': [],
             'extraction_status': 'empty_input',
             'evidence': {'total_fields': 0, 'average_confidence': 0.0, 'fields': {}},
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now(datetime.timezone.utc).isoformat()
         }
     
     def _error_extraction(self, error_msg: str) -> Dict:
@@ -353,5 +353,5 @@ class HRExtractorAgent:
             'extraction_status': 'error',
             'error_message': error_msg,
             'evidence': {'total_fields': 0, 'average_confidence': 0.0, 'fields': {}},
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now(datetime.timezone.utc).isoformat()
         }

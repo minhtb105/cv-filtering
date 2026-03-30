@@ -73,7 +73,7 @@ class CVRepository(BaseRepository):
         
         self.cv_versions[cv_id].append({
             "version": latest + 1,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
             "checksum": hash(str(value)),
             "size": len(str(value)),
         })

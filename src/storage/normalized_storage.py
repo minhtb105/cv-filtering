@@ -30,7 +30,7 @@ class NormalizedStorage:
             "translation_status": version.translation_status,
             "extraction_confidence": version.extraction_confidence,
             "extracted_at": version.extracted_at,
-            "translated_at": datetime.utcnow(),
+            "translated_at": datetime.now(datetime.timezone.utc),
         }
         result = self.collection.insert_one(doc)
         return str(result.inserted_id)

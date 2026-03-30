@@ -89,7 +89,7 @@ class DateValidator:
             end = end_date
             
             if not end:
-                end = datetime.now()
+                end = datetime.now(datetime.timezone.utc())
             else:
                 end = datetime.strptime(end_date, '%Y-%m')
             

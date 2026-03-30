@@ -24,7 +24,7 @@ class InterviewFeedback(BaseModel):
     strengths: List[str] = Field(default_factory=list, description="Strengths observed")
     weaknesses: List[str] = Field(default_factory=list, description="Areas for improvement")
     notes: Optional[str] = Field(None, description="Additional notes")
-    conducted_at: datetime = Field(default_factory=datetime.utcnow, description="Interview date")
+    conducted_at: datetime = Field(default_factory=lambda: datetime.now(datetime.timezone.utc), description="Interview date")
     
     class Config:
         frozen = False

@@ -87,7 +87,7 @@ def parse_arguments():
 def generate_report(results: list, output_file: str = "cv_parsing_report.json"):
     """Generate summary report of parsing results."""
     report = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
         "total_files": len(results),
         "successful": sum(1 for r in results if r["success"]),
         "failed": sum(1 for r in results if not r["success"]),

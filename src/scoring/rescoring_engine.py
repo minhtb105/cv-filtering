@@ -69,7 +69,7 @@ class RescoringEngine:
                     "jd_id": jd_id,
                     "event": event,
                     "priority": event.priority,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
                 })
         
         logger.info(f"Queued {len(cv_scores)} rescores for CV {cv_id}")
@@ -88,7 +88,7 @@ class RescoringEngine:
                     "jd_id": jd_id,
                     "event": event,
                     "priority": event.priority,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
                 })
         
         logger.info(f"Queued {len(jd_scores)} rescores for JD {jd_id}")
@@ -116,7 +116,7 @@ class RescoringEngine:
                     "cv_id": cv_id,
                     "jd_id": jd_id,
                     "status": "processed",
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
                 })
             except Exception as e:
                 logger.error(f"Error processing rescore item: {e}")

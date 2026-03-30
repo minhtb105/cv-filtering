@@ -28,14 +28,14 @@ class RescoringEvent:
         reason: str = "",
         priority: int = 5,
     ):
-        self.event_id = f"{event_type}:{entity_id}:{datetime.utcnow().timestamp()}"
+        self.event_id = f"{event_type}:{entity_id}:{datetime.now(datetime.timezone.utc).timestamp()}"
         self.event_type = event_type
         self.entity_id = entity_id
         self.entity_type = entity_type
         self.version = version
         self.reason = reason
         self.priority = priority
-        self.timestamp = datetime.utcnow().isoformat()
+        self.timestamp = datetime.now(datetime.timezone.utc).isoformat()
         self.status = "QUEUED"
     
     def to_dict(self) -> Dict[str, Any]:

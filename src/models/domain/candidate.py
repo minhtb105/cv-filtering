@@ -301,7 +301,7 @@ class ParsingMetadata(BaseModel):
     parser_version: str = Field(..., description="Version of parser used")
     extraction_method: str = Field(..., description="PDF extraction method")
     confidence_score: float = Field(default=0.0, ge=0, le=1, description="Overall extraction confidence")
-    parsed_at: datetime = Field(default_factory=datetime.utcnow, description="Parsing timestamp")
+    parsed_at: datetime = Field(default_factory=lambda: datetime.now(datetime.timezone.utc), description="Parsing timestamp")
     raw_text_length: int = Field(default=0, description="Length of raw extracted text")
     source_language: str = Field(default="en", description="Detected source language")
     translation_required: bool = Field(default=False, description="Was translation needed")
