@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:28.831035
+**Extracted:** 2026-03-30T01:46:58.055003
 
 ## SUMMARY
 
@@ -10,7 +10,9 @@ Giám đốc Công ty NTD Technology Agency
 - SĐT: 01234567899999
 - Email: duongnguyen@ntd.topcv.com
 Giao tiếp chuyên nghiệp, đàm phán thuyết phục
+--- Page 1 ---
 Quản lý danh mục khách hàng và tối ưu doanh thu
+© topcv.vn
 
 ## EXPERIENCE
 

@@ -2,10 +2,15 @@
 CV Parser Pipeline
 
 Main orchestrator for robust CV parsing with:
-- Text validation & cleaning
-- Section detection (multilingual, fuzzy)
+- 5-step geometric extraction pipeline (Steps 1-4)
+- Section detection and extraction (Step 5A/5B)
 - Structured markdown generation
 - Optional LLM extraction
+
+INTEGRATION NOTE:
+  This parser now uses the new 5-step geometric pipeline for extraction:
+  - STEPS 1-4: Via PDFExtractor (geometric layout analysis)
+  - STEP 5: Via CVReadingOrder (section extraction - NO-LLM or LLM mode)
 """
 
 import logging
@@ -16,6 +21,8 @@ from dataclasses import dataclass
 import json
 
 from src.extraction.pdf_extractor import PDFExtractor
+from src.extraction.cv_pipeline_integration import CVProcessingPipeline, PipelineConfig
+from src.extraction.cv_reading_order import CVReadingOrder
 from src.extraction.text_cleaner import TextCleaner
 from src.extraction.section_detector import SectionDetector, SectionType
 from src.extraction.markdown_generator import MarkdownGenerator, CVMarkdownConfig
@@ -58,7 +65,7 @@ class CVParser:
 
     def parse_cv(self, pdf_path: str) -> Dict[str, Any]:
         """
-        Complete CV parsing pipeline.
+        Complete CV parsing pipeline using 5-step geometric extraction.
 
         Args:
             pdf_path: Path to PDF file
@@ -81,8 +88,8 @@ class CVParser:
         result = {
             "success": False,
             "filename": os.path.basename(pdf_path),
-            "extraction_method": None,
-            "text_quality": None,
+            "extraction_method": "geometric_pipeline",
+            "text_quality": (True, "Using geometric extraction"),
             "cleaned_text": "",
             "sections": {},
             "markdown": "",
@@ -91,70 +98,59 @@ class CVParser:
             "metadata": {
                 "pdf_path": pdf_path,
                 "file_size": os.path.getsize(pdf_path) if os.path.exists(pdf_path) else 0,
+                "pipeline": "5-step geometric extraction",
             },
         }
 
         try:
-            # Step 1: Extract text from PDF
-            logger.info(f"Parsing CV: {pdf_path}")
+            logger.info(f"[Geometric Pipeline] Starting: {pdf_path}")
 
+            # File validation
             if not os.path.exists(pdf_path):
                 result["errors"].append(f"File not found: {pdf_path}")
                 return result
 
-            success, raw_text, method = PDFExtractor.extract_text_with_fallback(
-                pdf_path
+            # Run 5-step pipeline (Steps 1-4: geometric extraction, Step 5: section extraction)
+            pipeline_config = PipelineConfig(
+                use_llm=self.config.use_llm_extraction,
+                output_markdown_dir=self.config.output_markdown_dir,
+                output_json_dir=self.config.output_json_dir,
+                debug=False
             )
-            result["extraction_method"] = method
+            pipeline = CVProcessingPipeline(config=pipeline_config)
+            pipeline_result = pipeline.process_pdf(pdf_path)
 
-            if not success:
-                result["errors"].append("Failed to extract text from PDF")
+            if not pipeline_result.success:
+                result["errors"].append(pipeline_result.error)
+                logger.error(f"[Geometric Pipeline] Failed: {pipeline_result.error}")
                 return result
 
-            result["metadata"]["raw_text_length"] = len(raw_text)
+            # Extract sections from pipeline result
+            sections_dict = {}
+            for section_type, extracted_section in pipeline_result.extracted_sections.items():
+                sections_dict[section_type] = extracted_section.content
 
-            # Step 2: Validate & clean text
-            is_valid, reason, cleaned_text = self.text_cleaner.validate_and_clean(
-                raw_text
-            )
-            result["text_quality"] = (is_valid, reason)
-            result["cleaned_text"] = cleaned_text
+            result["sections"] = sections_dict
+            result["cleaned_text"] = pipeline_result.ordered_text
+            result["metadata"]["ordered_text_length"] = len(pipeline_result.ordered_text)
+            result["metadata"]["intermediate_markdown_length"] = len(pipeline_result.intermediate_markdown)
+            result["metadata"]["sections_extracted"] = len(sections_dict)
+            result["metadata"]["pages"] = pipeline_result.total_pages
+            if pipeline_result.metadata:
+                result["metadata"].update(pipeline_result.metadata)
 
-            if not is_valid:
-                logger.warning(f"Text quality issue: {reason}")
-                if method == "failed":  # If primary extraction failed
-                    result["errors"].append(f"Text quality issue: {reason}")
-                    return result
-
-            # Step 3: Detect sections
-            lines = self.text_cleaner.extract_lines(cleaned_text)
-            result["metadata"]["line_count"] = len(lines)
-
-            sections_grouped = self.section_detector.group_sections_with_content(
-                lines
-            )
-            result["sections"] = {
-                section_name: section_info["content"]
-                for section_name, section_info in sections_grouped.items()
-            }
-
-            logger.info(f"Detected {len(sections_grouped)} sections")
-
-            # Step 4: Extract personal info (heuristic)
-            personal_info = self._extract_personal_info(lines[:50])  # Check first 50 lines
-            result["metadata"]["personal_info"] = personal_info
-
-            # Step 5: Generate markdown
+            # Generate markdown from sections (beautified version for output)
+            personal_info = self._extract_personal_info_from_sections(sections_dict)
             personal_info_full = {
                 "name": personal_info.get("name", "Unknown"),
                 "email": personal_info.get("email", ""),
                 "phone": personal_info.get("phone", ""),
                 "location": personal_info.get("location", ""),
-                "summary": self._extract_summary_from_sections(sections_grouped),
+                "summary": sections_dict.get("summary", ""),
             }
 
-            sections_for_markdown = self._structure_sections_for_markdown(
-                sections_grouped
+            sections_for_markdown = self._structure_sections_for_markdown_from_dict(
+                sections_dict
             )
 
             markdown_config = (
@@ -169,40 +165,41 @@ class CVParser:
             markdown = MarkdownGenerator.normalize_markdown(markdown)
             result["markdown"] = markdown
 
-            # Save markdown if output dir specified
+            # Save beautified markdown
             if self.config.output_markdown_dir:
                 markdown_path = os.path.join(
                     self.config.output_markdown_dir,
-                    f"{Path(pdf_path).stem}.md"
+                    f"{Path(pdf_path).stem}_formatted.md"
                 )
                 MarkdownGenerator.save_markdown(markdown, markdown_path)
-                result["metadata"]["markdown_saved"] = markdown_path
-                logger.info(f"Markdown saved to: {markdown_path}")
+                result["metadata"]["markdown_formatted"] = markdown_path
+                logger.info(f"[Geometric Pipeline] Formatted markdown: {markdown_path}")
 
-            # Step 6: Optional LLM extraction
+            # Optional: LLM post-processing for structured schema
             if self.config.use_llm_extraction and self.llm_extractor:
-                logger.info("Running LLM extraction...")
+                logger.info("[Geometric Pipeline] Running optional LLM schema extraction...")
                 json_data = self.llm_extractor.extract(markdown)
                 if json_data:
                     result["json_extracted"] = json_data
 
-                    # Save JSON if output dir specified
                     if self.config.output_json_dir:
                         json_path = os.path.join(
                             self.config.output_json_dir,
-                            f"{Path(pdf_path).stem}.json"
+                            f"{Path(pdf_path).stem}_schema.json"
                         )
                         with open(json_path, "w", encoding="utf-8") as f:
                             json.dump(json_data, f, indent=2, ensure_ascii=False)
-                        result["metadata"]["json_saved"] = json_path
-                        logger.info(f"JSON saved to: {json_path}")
+                        result["metadata"]["json_schema"] = json_path
+                        logger.info(f"[Geometric Pipeline] Schema JSON: {json_path}")
 
             result["success"] = True
-            logger.info(f"Successfully parsed CV: {pdf_path}")
+            logger.info(
+                f"[Geometric Pipeline] Success: {len(sections_dict)} sections from {pipeline_result.total_pages} pages"
+            )
 
         except Exception as e:
-            logger.error(f"Unexpected error during parsing: {e}", exc_info=True)
-            result["errors"].append(f"Unexpected error: {str(e)}")
+            logger.error(f"[Geometric Pipeline] Unexpected error: {e}", exc_info=True)
+            result["errors"].append(f"Pipeline error: {str(e)}")
 
         return result
 
@@ -483,3 +480,104 @@ class CVParser:
         )
 
         return results
+
+    def _extract_personal_info_from_sections(self, sections_dict: Dict[str, str]) -> Dict[str, str]:
+        """
+        Extract personal info from extracted sections (from geometric pipeline).
+        
+        This method processes the sections output from the new pipeline
+        to extract name, email, phone, location.
+        """
+        import re
+
+        personal_info = {
+            "name": "",
+            "email": "",
+            "phone": "",
+            "location": "",
+        }
+
+        # Combine all content to search within
+        all_content = " ".join(sections_dict.values())
+
+        # Email pattern
+        email_match = re.search(
+            r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
+            all_content
+        )
+        if email_match:
+            personal_info["email"] = email_match.group()
+
+        # Phone pattern (basic)
+        phone_match = re.search(
+            r'(?:\+\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}',
+            all_content,
+        )
+        if phone_match:
+            personal_info["phone"] = phone_match.group().strip()
+
+        # Name: check personal_info section first, then first section
+        if "personal_info" in sections_dict:
+            pi_content = sections_dict["personal_info"]
+            first_line = pi_content.split("\n")[0].strip() if pi_content else ""
+            if first_line and len(first_line) < 100 and not email_match:
+                personal_info["name"] = first_line
+
+        # Location: check personal_info section
+        if "personal_info" in sections_dict and not personal_info["location"]:
+            pi_content = sections_dict["personal_info"]
+            location_match = re.search(r'(?:location|city|address)[:\s]+([^\n]+)', pi_content, re.IGNORECASE)
+            if location_match:
+                personal_info["location"] = location_match.group(1).strip()
+
+        return personal_info
+
+    def _structure_sections_for_markdown_from_dict(self, sections_dict: Dict[str, str]) -> Dict:
+        """
+        Structure sections dictionary for markdown generation.
+        
+        Converts flat section dictionary from pipeline into structured format
+        expected by MarkdownGenerator.
+        """
+        structured = {
+            "work_experience": [],
+            "education": [],
+            "skills": {},
+            "projects": [],
+            "certifications": {},
+        }
+
+        # Work experience
+        if "experience" in sections_dict:
+            exp_lines = sections_dict["experience"].split("\n")
+            exp_blocks = self._parse_experience_blocks(exp_lines)
+            structured["work_experience"] = exp_blocks
+
+        # Education
+        if "education" in sections_dict:
+            edu_lines = sections_dict["education"].split("\n")
+            edu_blocks = self._parse_education_blocks(edu_lines)
+            structured["education"] = edu_blocks
+
+        # Skills
+        if "skills" in sections_dict:
+            skill_lines = sections_dict["skills"].split("\n")
+            skill_dict = self._parse_skills(skill_lines)
+            structured["skills"] = skill_dict
+
+        # Projects
+        if "projects" in sections_dict:
+            proj_lines = sections_dict["projects"].split("\n")
+            proj_blocks = self._parse_project_blocks(proj_lines)
+            structured["projects"] = proj_blocks
+
+        # Certifications, Languages, Awards, Interests as lists
+        cert_dict = {}
+        for section_type in ["certifications", "languages", "awards", "interests"]:
+            if section_type in sections_dict:
+                lines = sections_dict[section_type].split("\n")
+                cert_dict[section_type] = [l.strip() for l in lines if l.strip()]
+
+        structured["certifications"] = cert_dict
+
+        return structured

@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:10.204631
+**Extracted:** 2026-03-30T01:47:37.503513
 
 ## SUMMARY
 
@@ -11,6 +11,7 @@ Giám đốc Vận hành – Công ty NDS cải tiến quy trình (LEAN, 5S…)
 cộng đồng
 •Chạy bộ, tập gym để duy trì thể lực
 và tinh thần kỷ luật
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -44,9 +45,9 @@ Kiểm kê, xử lý sai lệch tồn kho và tối ưu hàng lỗi và tracking
 Chuyên ngành Logistics và Quản lý chuỗi cung ứng Warehouse Management Advanced – VILAS
 Đại học Công nghiệp TopCV
 2022
+--- Page 1 ---
 ạ ọ g g ệp p
 2022
 Tốt nghiệp loại Khá Lean Six Sigma Yellow Belt – GBS Institute
 KỸ NĂNG HOẠT ĐỘNG DANH HIỆU VÀ GIẢI THƯỞNG
 Quản lý tồn kho, sơ đồ kho và luồng 2022 - Nay 2023
-hàng hóa

@@ -1,11 +1,12 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:35.456487
+**Extracted:** 2026-03-30T01:47:04.415934
 
 ## SUMMARY
 
 Toàn Nguyên Vũ - HR Director - Julie & Co. Đọc sách - Du lịch - Nấu ăn - Chơi cầu lông - Xem phim
 Tel.: (024) 6680 5588
+© topcv.vn
 
 ## EXPERIENCE
 

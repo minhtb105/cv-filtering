@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:48.892865
+**Extracted:** 2026-03-30T01:47:17.948051
 
 ## SUMMARY
 
@@ -57,6 +57,7 @@ Kinh nghiệm làm việc
 ## CERTIFICATIONS
 
 2024 Nhân viên xuất sắc của năm
+© topcv.vn
 
 ## CONTACT
 

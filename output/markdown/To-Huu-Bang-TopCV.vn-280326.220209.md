@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:07.832788
+**Extracted:** 2026-03-30T01:47:35.101803
 
 ## SUMMARY
 
@@ -71,10 +71,10 @@ Xếp loại: Xuất sắc
 •Vận hành và giám sát máy gắn linh kiện tự động (SMT) theo đúng quy trình
 kỹ thuật và tiêu chuẩn an toàn.
 2021 Siemens Certied Programmer
+--- Page 1 ---
 2020 Allen-Bradley (Rockwell) PLC •Kiểm tra nguyên vật liệu, chuẩn bị băng tải và thiết bị phụ trợ trước ca làm
 Programming Certicate việc để đảm bảo máy hoạt động liên tục và ổn định.
 •Theo dõi tình trạng máy, phát hiện và xử lý sự cố đơn giản, đồng thời báo
 cáo kịp thời cho kỹ thuật viên khi phát sinh lỗi nghiêm trọng.
 Danh hiệu và giải
 •Ghi chép thông tin sản xuất, cập nhật số liệu lên hệ thống và phối hợp với
-thưởng

@@ -10,7 +10,7 @@ import logging
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
-from src.schemas import (
+from src.models.domain.candidate import (
     CandidateProfile,
     ContactInfo,
     Skill,
@@ -20,11 +20,11 @@ from src.schemas import (
     Certification,
     Language,
     SkillEvidence,
-    ParsingMetadata,
-    ExtractionMethod,
     LocationFormat,
     CEFRLEVEL,
 )
+from src.models.validation.enums import ExtractionMethod
+from src.models.domain.cv_version import ParsingMetadata
 
 
 logger = logging.getLogger(__name__)

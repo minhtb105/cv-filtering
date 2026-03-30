@@ -1,12 +1,14 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:44.596157
+**Extracted:** 2026-03-30T01:47:13.854198
 
 ## SUMMARY
 
 Thiết kế kỹ thuật bằng CAD
 (AutoCAD, SolidWorks, Catia, Đỗ Quỳnh Mai - HR Director - Công ty TopCV
 Inventor) Tel.: (024) 6680 5588
+--- Page 1 ---
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -25,6 +27,8 @@ Kỹ sư cơ khí
 
 (AutoCAD, SolidWorks, Catia, Đỗ Quỳnh Mai - HR Director - Công ty TopCV
 Inventor) Tel.: (024) 6680 5588
+--- Page 1 ---
+© topcv.vn
 
 ## EDUCATION
 

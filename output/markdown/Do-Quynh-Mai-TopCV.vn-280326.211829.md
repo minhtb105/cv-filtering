@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:33.870124
+**Extracted:** 2026-03-30T01:47:02.824230
 
 ## SUMMARY
 
@@ -9,6 +9,8 @@ Nguyễn Thu Hương - HR Director - MW Mart - Tel.: (024) 6680 5588
 ● Đọc sách
 Danh hiệu và giải thưởng
 Employee of the Year Award 2024
+--- Page 1 ---
+© topcv.vn
 
 ## EXPERIENCE
 

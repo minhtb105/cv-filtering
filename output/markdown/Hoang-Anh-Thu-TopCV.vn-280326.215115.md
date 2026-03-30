@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:36.114974
+**Extracted:** 2026-03-30T01:47:05.102013
 
 ## SUMMARY
 
@@ -13,6 +13,7 @@ Email: minhhchau.gachnau@gmail.com
 Do Trung tâm Aroma cấp – 2022
 Chứng chỉ Kỹ năng phục vụ bàn cơ bản
 2023
+Chứng chỉ An toàn vệ sinh thực phẩm © topcv.vn
 
 ## EXPERIENCE
 
@@ -30,6 +31,7 @@ Kỹ năng
 ## SKILLS
 
 2023
+Chứng chỉ An toàn vệ sinh thực phẩm © topcv.vn
 
 ## EDUCATION
 

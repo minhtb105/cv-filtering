@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:58.273207
+**Extracted:** 2026-03-30T01:47:27.309227
 
 ## SUMMARY
 
@@ -30,6 +30,7 @@ SCPS™ - Chuyên viên bán hàng chuyên nghiệp quốc tế
 
 ## SKILLS
 
+--- Page 1 ---
 •Tiếp nhận và giải đáp các băn khoăn của khách hàng khi
 Người giới thiệu
 sử dụng sản phẩm/dịch vụ.
@@ -39,4 +40,3 @@ Tel.: (024) 6680 5588
 giá mẫu.
 Toàn Viên Hựu - HRBP Manager - MW Trading Joint Stock
 •Đào tạo, hướng dẫn nhân viên mới.
-Company

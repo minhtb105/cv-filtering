@@ -1,16 +1,18 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:47.855333
+**Extracted:** 2026-03-30T01:47:16.830722
 
 ## SUMMARY
 
 CLB NGUỒN NHÂN LỰC (HRC - NEU)
 Ông: Trần Minh Đức - Giám đốc điều
+--- Page 1 ---
 Ô g: ầ ức Gá đốc đều
 hành Công ty TNHH NTD Thành viên ban đối ngoại
 SĐT: (024) 6680 5588
 •Tìm kiếm và làm việc với đối tác tài trợ
 •Tổ chức cuộc thi "The HR Sandbox Case Competition"
+© topcv.vn
 
 ## EXPERIENCE
 

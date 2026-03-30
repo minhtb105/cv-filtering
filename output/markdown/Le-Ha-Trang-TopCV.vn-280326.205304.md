@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:40.994875
+**Extracted:** 2026-03-30T01:47:10.085685
 
 ## SUMMARY
 
@@ -9,6 +9,7 @@ Nguyễn Tùng Dương
 Trưởng phòng kinh doanh - Showroom ô tô Lemew
 •Điện thoại: (+84) 23 456 789
 •Email: duongnguyen@topcv.vn
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -55,3 +56,4 @@ Nguyễn Tùng Dương
 Trưởng phòng kinh doanh - Showroom ô tô Lemew
 •Điện thoại: (+84) 23 456 789
 •Email: duongnguyen@topcv.vn
+© topcv.vn

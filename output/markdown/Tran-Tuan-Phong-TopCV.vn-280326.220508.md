@@ -1,6 +1,6 @@
 # EN - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:15.753916
+**Extracted:** 2026-03-30T01:47:43.035367
 
 ## SUMMARY
 
@@ -30,6 +30,7 @@ maintaining high product standards.
 
 ## SKILLS
 
+© topcv.vn
 
 ## EDUCATION
 

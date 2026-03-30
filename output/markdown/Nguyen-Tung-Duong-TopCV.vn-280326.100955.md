@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:57.360147
+**Extracted:** 2026-03-30T01:47:26.336679
 
 ## EXPERIENCE
 
@@ -36,3 +36,4 @@ Professional)
 12/2018
 Giải nhì cuộc thi Phân tích Dữ liệu Kinh doanh cấp trường
 BCS International Diploma in Business Analysis (Đại học TopCV)
+© topcv.vn

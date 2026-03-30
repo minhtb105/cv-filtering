@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:02.112629
+**Extracted:** 2026-03-30T01:47:30.730184
 
 ## SUMMARY
 
@@ -38,8 +38,8 @@ Chứng chỉ
 nguồn tài trợ cho các chương trình, sự kiện của CLB.
 2023
 Chứng chỉ Master Financial Advisor
+--- Page 1 ---
 g
-•Đại diện CLB tham dự các sự kiện kết nối, diễn đàn doanh nghiệp để duy trì và
 
 ## EDUCATION
 
@@ -56,9 +56,11 @@ phù hợp.
 
 ## CERTIFICATIONS
 
+--- Page 1 ---
 g
 •Đại diện CLB tham dự các sự kiện kết nối, diễn đàn doanh nghiệp để duy trì và
 mở rộng mạng lưới quan hệ.
+© topcv.vn
 
 ## CONTACT
 

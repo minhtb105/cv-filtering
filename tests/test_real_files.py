@@ -7,7 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-from src.extraction.pdf import PDFExtractor
+from src.extraction import PDFExtractor
 from src.extraction.markdown import HybridSectionExtractor
 
 
@@ -20,24 +20,23 @@ def process_sample_pdfs():
     pdf_files = list(sample_dir.glob("*.pdf"))
     print(f"Found {len(pdf_files)} PDF files in {sample_dir}")
 
-    extractor = PDFExtractor()
     normalizer = HybridSectionExtractor()
 
     results = []
     for pdf_path in pdf_files:
         print(f"\nProcessing: {pdf_path.name}")
 
-        pdf_result = extractor.extract(str(pdf_path))
-        if not pdf_result.is_success:
-            print(f"  [FAIL] PDF extraction failed: {pdf_result.error}")
+        success, text, method = PDFExtractor.extract_text_with_fallback(str(pdf_path))
+        if not success:
+            print(f"  [FAIL] PDF extraction failed with method: {method}")
             results.append({
                 "file": pdf_path.name,
                 "success": False,
-                "error": pdf_result.error
+                "error": "Extraction failed"
             })
             continue
 
-        normalized, metadata = normalizer.normalize(pdf_result.full_text)
+        normalized, metadata = normalizer.normalize(text)
 
         output_path = output_dir / f"{pdf_path.stem}.md"
         with open(output_path, "w", encoding="utf-8") as f:
@@ -46,14 +45,14 @@ def process_sample_pdfs():
         results.append({
             "file": pdf_path.name,
             "success": True,
-            "pages": pdf_result.total_pages,
+            "method": method,
             "language": metadata.language_detected,
             "sections": metadata.sections_found,
             "confidence": metadata.confidence,
             "output": str(output_path)
         })
 
-        print(f"  [OK] Pages: {pdf_result.total_pages}")
+        print(f"  [OK] Method: {method}")
         print(f"     Language: {metadata.language_detected}")
         print(f"     Sections: {metadata.sections_found}")
         print(f"     Confidence: {metadata.confidence:.2f}")

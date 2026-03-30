@@ -1,12 +1,13 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:55.410675
+**Extracted:** 2026-03-30T01:47:24.570290
 
 ## SUMMARY
 
 thực tập
 THÔNG TIN THÊM
 (Điền các thông tin khác nếu có).
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -62,3 +63,4 @@ MW Hotel & Residence TopCV •Theo dõi và kiểm soát số lượng, chất l
 
 ## CONTACT
 
+© topcv.vn

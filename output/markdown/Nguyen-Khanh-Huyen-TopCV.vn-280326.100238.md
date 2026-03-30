@@ -1,12 +1,13 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:49.189228
+**Extracted:** 2026-03-30T01:47:18.233062
 
 ## SUMMARY
 
 Anh... - Trưởng phòng Marketing
 Công ty TOPCV
 Điện thoại:...
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -55,7 +56,7 @@ Cửa hàng TOPCV, Nhân viên bán hàng
 - Bán hàng trực tiếp tại cửa hàng cho người nước ngoài và người
 Việt.
 - Quảng bá sản phẩm thông qua các ấn phẩm truyền thông: banner,
+--- Page 1 ---
 poster, tờ rơi...
 - Lập báo cáo sản lượng bán ra hàng ngày.
 Hoạt động
-Nhóm tình nguyện TOPCV, Tình nguyện viên

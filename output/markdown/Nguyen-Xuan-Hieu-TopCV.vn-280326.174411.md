@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:00.112753
+**Extracted:** 2026-03-30T01:47:28.924065
 
 ## SUMMARY
 
@@ -43,10 +43,12 @@ phần và gia tăng doanh thu.
 
 ## SKILLS
 
+--- Page 1 ---
 Danh hiệu và giải thưởng •Tham gia tổ chức sự kiện, thuyết trình ý tưởng kinh doanh.
 Nhân viên xuất sắc nhất
 2023
 Quý III/2023
+© topcv.vn
 
 ## EDUCATION
 
@@ -66,7 +68,9 @@ Hoạt động
 •Thành viên dự án chế tạo sản phẩm cơ khí, cùng đội nhóm tham gia các
 CBP)
 cuộc thi sáng tạo kỹ thuật.
+--- Page 1 ---
 Danh hiệu và giải thưởng •Tham gia tổ chức sự kiện, thuyết trình ý tưởng kinh doanh.
 Nhân viên xuất sắc nhất
 2023
 Quý III/2023
+© topcv.vn

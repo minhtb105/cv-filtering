@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:31.165959
+**Extracted:** 2026-03-30T01:47:00.599643
 
 ## SUMMARY
 
@@ -8,6 +8,7 @@
 •Tổ chức các cuộc thi hùng biện tiếng Anh trong phạm vi nội bộ.
 Toàn Nguyên Vũ - HR Manager -
 MW Group - Tel.: 024 6680 5588
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -57,9 +58,9 @@ trải nghiệm khách hàng.
 IELTS 7.5
 •Thực hiện khảo sát mức độ hài lòng của khách hàng sau khi xử lý
 yêu cầu và đề xuất các cải tiến dựa trên phản hồi thực tế.
+--- Page 1 ---
 Sở thích
 Hoạt động
-Du lịch - Đọc sách- Nấu ăn
 
 ## CONTACT
 

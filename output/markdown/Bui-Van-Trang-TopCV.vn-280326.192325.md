@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:28.181143
+**Extracted:** 2026-03-30T01:46:57.351466
 
 ## SUMMARY
 
@@ -9,6 +9,7 @@ các sản phẩm handmade gây quỹ nhằm hỗ Nguyễn Tùng Dương
 trợ trẻ em nghèo vùng cao vượt qua mùa Giám đốc kinh doanh - NTD Group
 đông khắc nghiệt •SĐT: 012 345 6789
 • Email: duongnguyen1111@topcv.vn
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -58,4 +59,4 @@ Danh hiệu và giải thưởng
 thiện.
 2023
 Nhân viên có doanh số cao nhất 2023
-Học vấn
+--- Page 1 ---

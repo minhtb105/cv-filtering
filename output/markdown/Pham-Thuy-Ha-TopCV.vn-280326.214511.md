@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:05.113905
+**Extracted:** 2026-03-30T01:47:32.850398
 
 ## SUMMARY
 
@@ -8,12 +8,12 @@
 yêu cầu của khách hàng hoặc các phòng ban liên quan.
 Ms. Đỗ Quỳnh Mai (HR
 Director) - SVT Finance
+--- Page 1 ---
 HOẠT ĐỘNG Innovation Co.
 Tel.: (024) 6680 5588
 Câu lạc Kế toán - Kiểm toán
 Thành viên Ban Chuyên môn ( 2016 - 2018 ) THÔNG TIN THÊM
 •Biên soạn nội dung cho các bài viết chia sẻ kiến thức về Kế toán trên Fanpage.
-•Tham gia tổ chức các buổi đào tạo nội bộ giúp các thành viên trong CLB nâng cao (Điền các thông tin khác
 
 ## EXPERIENCE
 
@@ -30,6 +30,7 @@ liên quan đến kế toán
 
 ## SKILLS
 
+© topcv.vn
 
 ## EDUCATION
 

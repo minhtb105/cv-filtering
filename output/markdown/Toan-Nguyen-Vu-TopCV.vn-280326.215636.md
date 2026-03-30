@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:08.872714
+**Extracted:** 2026-03-30T01:47:36.222427
 
 ## EXPERIENCE
 
@@ -53,3 +53,4 @@ Toàn Nguyên Vũ
 
 ## CERTIFICATIONS
 
+© topcv.vn

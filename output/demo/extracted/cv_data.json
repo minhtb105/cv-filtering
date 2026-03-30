@@ -1,0 +1,19 @@
+{
+  "sections": [
+    {
+      "section_name": "EDUCATION",
+      "content": "Education",
+      "confidence": 0.75
+    },
+    {
+      "section_name": "SKILLS",
+      "content": "Skills",
+      "confidence": 0.75
+    },
+    {
+      "section_name": "CERTIFICATIONS",
+      "content": "Certifications\nCertified Defense Financial Manager, CDFM, May 2005\nInterests\nAmerican Society Of Military Comptrollers\nAdditional Information",
+      "confidence": 0.75
+    }
+  ]
+}

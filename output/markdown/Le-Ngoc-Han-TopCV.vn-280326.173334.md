@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:41.730140
+**Extracted:** 2026-03-30T01:47:10.817281
 
 ## SUMMARY
 
@@ -33,6 +33,7 @@ Kỹ năng
 Câu lạc bộ Logistics
 •Liên hệ diễn giả, nhà bảo trợ chuyên môn để tổ chức các buổi hội thảo chia
 sẻ kiến thức chuyên môn ngành Logistics.
+© topcv.vn
 
 ## EDUCATION
 

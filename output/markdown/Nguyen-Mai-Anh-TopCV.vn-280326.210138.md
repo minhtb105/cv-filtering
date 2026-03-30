@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:52.451054
+**Extracted:** 2026-03-30T01:47:21.676661
 
 ## SUMMARY
 
@@ -12,6 +12,7 @@ Chứng chỉ
 Đọc sách, đi du lịch, xem phim
 2023 IELT 7.5
 2024 Kỹ năng bán hàng (Selling Skill) - Trung tâm Đào tạo ABC
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -56,6 +57,7 @@ Thông tin cá nhân
 Đọc sách, đi du lịch, xem phim
 2023 IELT 7.5
 2024 Kỹ năng bán hàng (Selling Skill) - Trung tâm Đào tạo ABC
+© topcv.vn
 
 ## CONTACT
 

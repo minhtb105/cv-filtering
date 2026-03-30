@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:11.938570
+**Extracted:** 2026-03-30T01:47:39.217804
 
 ## SUMMARY
 
@@ -10,6 +10,7 @@ Nguyễn Tùng Dương - Quản lý Sản xuất Công ty Cổ phần PMT -
 SĐT: (024) 6680 5588 - Email: hotro@topcv.vn
 2021
 IELTS 7.0
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -34,8 +35,8 @@ Thành thạo tin học văn phòng
 2023
 Hoạt động Sử dụng phần mềm quản lý sản xuất
 Co-Leader CLBTiếngAnhTopCV
+--- Page 1 ---
 Co Leader CLB Tiếng Anh TopCV
-2017 - 2021 •Tổ chức các hoạt động giao lưu nói Khả năng sử dụng ngoại ngữ
 
 ## EDUCATION
 
@@ -59,3 +60,4 @@ Nguyễn Tùng Dương - Quản lý Sản xuất Công ty Cổ phần PMT -
 SĐT: (024) 6680 5588 - Email: hotro@topcv.vn
 2021
 IELTS 7.0
+© topcv.vn

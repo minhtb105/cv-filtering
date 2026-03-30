@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:42.754966
+**Extracted:** 2026-03-30T01:47:11.875473
 
 ## SUMMARY
 
@@ -13,6 +13,7 @@ phán Email liên hệ: abc@topcv.vn
 Số điện thoại: 0123 456 789
 Kỹ năng ngoại ngữ
 Email liên hệ: xyz@topcv.vn
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -30,6 +31,7 @@ về văn hóa và chính sách nhập
 ## SKILLS
 
 Email liên hệ: xyz@topcv.vn
+© topcv.vn
 
 ## EDUCATION
 
@@ -46,3 +48,4 @@ Singapore, Malaysia, Thái Lan, Philippines, Ấn Độ, v.vv..
 
 ## CONTACT
 
+© topcv.vn

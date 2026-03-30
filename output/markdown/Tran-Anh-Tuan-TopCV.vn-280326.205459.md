@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:11.039627
+**Extracted:** 2026-03-30T01:47:38.303805
 
 ## SUMMARY
 
@@ -8,6 +8,7 @@ Anh Nguyễn Tùng Dương - CCO công ty NDS
 Software
 • SĐT: (024) 6680 5588
 • Email: hotro@topcv.vn
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -33,7 +34,7 @@ Trường Đại học TopCV
 vào quá trình kinh doanh phần mềm giáo
 • Xếp loại: Xuất sắc
 dục Bitterie, giúp quy trình bán hàng giảm
-• Chứng chỉ: IELTS 8.5, HSK 3 30% thời gian triển khai và tăng 46% tỷ lệ
+--- Page 1 ---
 
 ## CONTACT
 

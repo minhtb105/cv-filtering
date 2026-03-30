@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:32.748351
+**Extracted:** 2026-03-30T01:47:02.131084
 
 ## SUMMARY
 
@@ -8,6 +8,7 @@
 Tel.: (024) 6680 5588
 ♥ Sở thích
 Teambuilding, tham gia các câu lạc bộ, ca hát, văn nghệ, chơi thể thao
+© topcv.vn
 
 ## EXPERIENCE
 

@@ -1,12 +1,14 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:13.821333
+**Extracted:** 2026-03-30T01:47:41.083793
 
 ## SUMMARY
 
 Đỗ Quỳnh Mai - HR Director - Julie Phân tích doanh thu và đưa ra chiến lược kinh doanh
 & Co.
+--- Page 1 ---
 Tel.: (024) 6680 5588 Giao tiếp và giải quyết hiệu quả các tình huống phát sinh
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -30,7 +32,9 @@ Giám sát hoạt động, tối ưu vận hành cửa hàng
 Người giới thiệu
 Đỗ Quỳnh Mai - HR Director - Julie Phân tích doanh thu và đưa ra chiến lược kinh doanh
 & Co.
+--- Page 1 ---
 Tel.: (024) 6680 5588 Giao tiếp và giải quyết hiệu quả các tình huống phát sinh
+© topcv.vn
 
 ## EDUCATION
 

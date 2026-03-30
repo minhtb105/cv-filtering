@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:34.772732
+**Extracted:** 2026-03-30T01:47:03.742735
 
 ## SUMMARY
 
@@ -37,9 +37,9 @@ Sở thích
 Nấu ăn - Du lịch - Đọc sách - Chơi thể thao
 Chứng chỉ
 2024 Google Ads Search/Video Certication
+--- Page 1 ---
 2022 HubSpot – Inbound Marketing Certication
 2021 Google Digital Garage – Fundamentals of Digital Marketing
-Danh hiệu và giải thưởng
 
 ## EDUCATION
 
@@ -57,10 +57,12 @@ Truyền thông đại chúng
 ## CERTIFICATIONS
 
 2024 Google Ads Search/Video Certication
+--- Page 1 ---
 2022 HubSpot – Inbound Marketing Certication
 2021 Google Digital Garage – Fundamentals of Digital Marketing
 Danh hiệu và giải thưởng
 2023 Top 5 Best Empoyees of the year
+© topcv.vn
 
 ## CONTACT
 

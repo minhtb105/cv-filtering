@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:51.207287
+**Extracted:** 2026-03-30T01:47:20.405064
 
 ## SUMMARY
 
@@ -12,8 +12,8 @@ Công ty TOPCV
 Điện thoại:...
 lạc quan.
 DANH HIỆU VÀ GIẢI THƯỞNG
+--- Page 1 ---
 Nhân viên xuất sắc năm công ty TOPCV 2014
-CHỨNG CHỈ
 
 ## EXPERIENCE
 
@@ -31,6 +31,7 @@ Nhân viên bán hàng
 ## CERTIFICATIONS
 
 Giải nhất Tài năng TOPCV 2013
+© topcv.vn
 
 ## CONTACT
 

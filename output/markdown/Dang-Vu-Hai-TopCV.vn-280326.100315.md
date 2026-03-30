@@ -1,6 +1,6 @@
 # EN - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:29.380616
+**Extracted:** 2026-03-30T01:46:58.594056
 
 ## SUMMARY
 
@@ -20,6 +20,7 @@ NPCs, enabling decision-making, flexible behavior,
 References
 Mai Do Quynh - HR Director – Gameboai Investment &
 Development Co., Ltd - 📞 (024) 6680 5588
+© topcv.vn
 
 ## PROJECTS
 

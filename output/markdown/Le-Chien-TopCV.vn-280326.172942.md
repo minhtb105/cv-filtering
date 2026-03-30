@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:39.217580
+**Extracted:** 2026-03-30T01:47:08.145798
 
 ## SUMMARY
 
@@ -55,3 +55,4 @@ Trung tâm Y tế Cộng đồng SVT TopCV
 
 ## CERTIFICATIONS
 
+© topcv.vn

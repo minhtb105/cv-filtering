@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:31.957942
+**Extracted:** 2026-03-30T01:47:01.312619
 
 ## SUMMARY
 
@@ -9,9 +9,11 @@ Employee of the Year Award
 2023
 Development Co., Ltd
 Top Performer of the Year
+--- Page 1 ---
 2022 Tel.: (024) 6680 5588
 Toàn Nguyên Vũ - HRBP Manager - MW Trading Joint
 Stock Company
+Tel.: (024) 6680 5588 © topcv.vn
 
 ## EXPERIENCE
 

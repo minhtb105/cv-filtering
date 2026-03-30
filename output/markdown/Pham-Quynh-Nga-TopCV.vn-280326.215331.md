@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:03.813632
+**Extracted:** 2026-03-30T01:47:31.829580
 
 ## SUMMARY
 
@@ -8,6 +8,7 @@ Nguyễn Mai Lê
 Tổ trưởng Tổ Buồng phòng – Khách sạn Sunrise Boutique 4 sao
 •SĐT: (024) 6680 5588
 •Email: maile@sunrise.topcv.vn
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -57,3 +58,4 @@ Nguyễn Mai Lê
 Tổ trưởng Tổ Buồng phòng – Khách sạn Sunrise Boutique 4 sao
 •SĐT: (024) 6680 5588
 •Email: maile@sunrise.topcv.vn
+© topcv.vn

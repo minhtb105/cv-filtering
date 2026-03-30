@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:36.847814
+**Extracted:** 2026-03-30T01:47:05.764972
 
 ## SUMMARY
 

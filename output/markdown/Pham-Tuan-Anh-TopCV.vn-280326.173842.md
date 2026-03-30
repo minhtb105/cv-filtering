@@ -1,12 +1,13 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:06.390528
+**Extracted:** 2026-03-30T01:47:33.719085
 
 ## SUMMARY
 
 Nguyễn Tùng Dương - Giám đốc kinh doanh, NDS Group
 •SĐT: (024) 6680 5588
 •Email: duongnguyen@nds.topcv.vn
+© topcv.vn
 
 ## EXPERIENCE
 

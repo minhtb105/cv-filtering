@@ -1,11 +1,12 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:56.421802
+**Extracted:** 2026-03-30T01:47:25.524351
 
 ## SUMMARY
 
 SỞ THÍCH
 Đọc sách, Chạy bộ, Đi du lịch
+© topcv.vn
 
 ## EXPERIENCE
 
@@ -26,6 +27,7 @@ NGƯỜI GIỚI THIỆU
 Người giới thiệu sẽ được cung cấp khi có yêu cầu.
 SỞ THÍCH
 Đọc sách, Chạy bộ, Đi du lịch
+© topcv.vn
 
 ## EDUCATION
 

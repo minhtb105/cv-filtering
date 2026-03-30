@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:02:00.949651
+**Extracted:** 2026-03-30T01:47:29.832723
 
 ## SUMMARY
 
@@ -30,11 +30,13 @@ Trưởng phòng Kinh doanh trong 2
 
 ## SKILLS
 
+--- Page 1 ---
 CBP) •Tham gia tổ chức sự kiện, thuyết trình ý tưởng kinh doanh.
 Danh hiệu và giải thưởng
 Nhân viên xuất sắc nhất
 2023
 Quý III/2023
+© topcv.vn
 
 ## EDUCATION
 
@@ -52,8 +54,10 @@ Hoạt động
 ## CERTIFICATIONS
 
 2022 cuộc thi sáng tạo kỹ thuật.
+--- Page 1 ---
 CBP) •Tham gia tổ chức sự kiện, thuyết trình ý tưởng kinh doanh.
 Danh hiệu và giải thưởng
 Nhân viên xuất sắc nhất
 2023
 Quý III/2023
+© topcv.vn

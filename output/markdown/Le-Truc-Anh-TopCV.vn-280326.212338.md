@@ -1,6 +1,6 @@
 # VI - CV Extraction
 
-**Extracted:** 2026-03-29T04:01:43.746331
+**Extracted:** 2026-03-30T01:47:12.946323
 
 ## EXPERIENCE
 
@@ -18,6 +18,7 @@ M 0149141349 buổi livestream từ 500 lên 2500 trong vòng 3 tháng.
 ## SKILLS
 
 cho các hoạt động tình nguyện của CLB.
+--- Page 1 ---
 SỞ THÍCH •Phối hợp với các ban khác trong CLB nhằm tổ chức các sự kiện,
 dự án tình nguyện nhằm xây dựng hình ảnh tích cực của CLB và
 tăng cường kết nối với cộng đồng.
@@ -26,7 +27,6 @@ CHỨNG CHỈ
 •Nấu ăn
 DANH HIỆU VÀ GIẢI THƯỞNG
 2023
-Khóa học Livestream bán hàng - Học viện MLB Co
 
 ## EDUCATION
 
