@@ -1,302 +1,186 @@
 """
-CV Parser Pipeline
+CV Parser - Main Public API
 
-Main orchestrator for robust CV parsing with:
-- 5-step geometric extraction pipeline (Steps 1-4)
-- Section detection and extraction (Step 5A/5B)
-- Structured markdown generation
-- Optional LLM extraction
+Simplified CV parsing interface using Clean Architecture pipeline:
+- STEP 1-4: Geometric extraction (PDFExtractor)
+- STEP 5: LLM-based structured extraction (HRExtractorAgent)
+- STEP 6: Enrichment (PostProcessor)
 
-INTEGRATION NOTE:
-  This parser now uses the new 5-step geometric pipeline for extraction:
-  - STEPS 1-4: Via PDFExtractor (geometric layout analysis)
-  - STEP 5: Via CVReadingOrder (section extraction - NO-LLM or LLM mode)
+This parser provides a high-level interface that wraps CVProcessingPipeline,
+handling file I/O, result serialization, and format conversion.
+
+Design principle: Trust LLM output, enrich through computation only.
+No keyword lists, no fuzzy matching, no regex-based section detection.
 """
 
 import logging
 import os
+import json
 from typing import Dict, Optional, Any
 from pathlib import Path
-from dataclasses import dataclass
-import json
+from dataclasses import dataclass, asdict
 
-from src.extraction.cv_pipeline_integration import CVProcessingPipeline, PipelineConfig
-from src.extraction.text_cleaner import TextCleaner
-from src.extraction.section_detector import HeaderDetector
-from src.extraction.markdown_generator import MarkdownGenerator, CVMarkdownConfig
-from src.extraction.llm_extractor import LLMExtractor, LLMExtractionConfig
+from src.extraction.cv_pipeline import CVProcessingPipeline, PipelineConfig, ProcessingResult
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class CVParsingConfig:
-    """Configuration for CV parsing pipeline."""
-    extract_with_ocr: bool = False
-    use_llm_extraction: bool = False
-    remove_accents_for_matching: bool = True
-    llm_config: Optional[LLMExtractionConfig] = None
-    markdown_config: Optional[CVMarkdownConfig] = None
+    """Configuration for CV parsing."""
+    use_llm_extraction: bool = True
+    llm_model: str = "qwen2.5-coder:3b"
+    llm_base_url: str = "http://localhost:11434"
+    llm_timeout: int = 30
     output_markdown_dir: Optional[str] = None
     output_json_dir: Optional[str] = None
+    debug: bool = False
 
 
 class CVParser:
-    """Robust CV parsing pipeline with multilingual support."""
+    """Public CV parsing interface."""
 
     def __init__(self, config: Optional[CVParsingConfig] = None):
+        """
+        Initialize the CV parser.
+        
+        Args:
+            config: CVParsingConfig instance
+        """
         self.config = config or CVParsingConfig()
-        self.text_cleaner = TextCleaner()
-        self.header_detector = HeaderDetector()
-
-        if self.config.use_llm_extraction:
-            llm_config = self.config.llm_config or LLMExtractionConfig()
-            self.llm_extractor = LLMExtractor(llm_config)
-        else:
-            self.llm_extractor = None
-
-        # Create output directories if specified
-        if self.config.output_markdown_dir:
-            Path(self.config.output_markdown_dir).mkdir(parents=True, exist_ok=True)
-        if self.config.output_json_dir:
-            Path(self.config.output_json_dir).mkdir(parents=True, exist_ok=True)
+        
+        # Initialize the processing pipeline
+        pipeline_cfg = PipelineConfig(
+            use_llm=self.config.use_llm_extraction,
+            llm_model=self.config.llm_model,
+            llm_base_url=self.config.llm_base_url,
+            llm_timeout=self.config.llm_timeout,
+            output_markdown_dir=self.config.output_markdown_dir,
+            output_json_dir=self.config.output_json_dir,
+            debug=self.config.debug,
+        )
+        self.pipeline = CVProcessingPipeline(config=pipeline_cfg)
 
     def parse_cv(self, pdf_path: str) -> Dict[str, Any]:
         """
-        Complete CV parsing pipeline using 5-step geometric extraction.
+        Parse a CV PDF file end-to-end.
+
+        Flow:
+        1. STEP 1-4: Extract geometric structure via PDFExtractor
+        2. STEP 5: Extract structured data via HRExtractorAgent (LLM-based)
+        3. STEP 6: Enrich with computed values via PostProcessor
 
         Args:
-            pdf_path: Path to PDF file
+            pdf_path (str): Path to PDF file
 
         Returns:
-            Dict with:
+            Dict with parsing results:
             {
                 'success': bool,
                 'filename': str,
                 'extraction_method': str,
-                'text_quality': (is_valid, reason),
                 'cleaned_text': str,
-                'sections': Dict[section_type] → content,
-                'markdown': str,
-                'json_extracted': Optional[Dict],
+                'extracted_profile': Dict or None,
+                'total_years_experience': float,
+                'seniority_level': str or None,
+                'markdown': str (intermediate markdown dump),
                 'errors': List[str],
                 'metadata': Dict
             }
         """
-        result = {
+        result_dict = {
             "success": False,
             "filename": os.path.basename(pdf_path),
             "extraction_method": "geometric_pipeline",
-            "text_quality": (True, "Using geometric extraction"),
             "cleaned_text": "",
-            "sections": {},
+            "extracted_profile": None,
+            "total_years_experience": 0.0,
+            "seniority_level": None,
             "markdown": "",
-            "json_extracted": None,
             "errors": [],
             "metadata": {
                 "pdf_path": pdf_path,
                 "file_size": os.path.getsize(pdf_path) if os.path.exists(pdf_path) else 0,
-                "pipeline": "5-step geometric extraction",
+                "pipeline": "Clean Architecture (PDFExtractor → HRExtractorAgent → PostProcessor)",
             },
         }
 
         try:
-            logger.info(f"[Geometric Pipeline] Starting: {pdf_path}")
+            logger.info(f"[CVParser] Starting: {pdf_path}")
 
             # File validation
             if not os.path.exists(pdf_path):
-                result["errors"].append(f"File not found: {pdf_path}")
-                return result
+                error_msg = f"File not found: {pdf_path}"
+                result_dict["errors"].append(error_msg)
+                logger.error(f"[CVParser] {error_msg}")
+                return result_dict
 
-            # Run 5-step pipeline (Steps 1-4: geometric extraction, Step 5: section extraction)
-            pipeline_config = PipelineConfig(
-                use_llm=self.config.use_llm_extraction,
-                output_markdown_dir=self.config.output_markdown_dir,
-                output_json_dir=self.config.output_json_dir,
-                debug=False
-            )
-            pipeline = CVProcessingPipeline(config=pipeline_config)
-            pipeline_result = pipeline.process_pdf(pdf_path)
+            # Run the pipeline
+            logger.info(f"[CVParser] Running pipeline...")
+            pipeline_result: ProcessingResult = self.pipeline.process_pdf(pdf_path)
 
-            if not pipeline_result.success:
-                result["errors"].append(pipeline_result.error)
-                logger.error(f"[Geometric Pipeline] Failed: {pipeline_result.error}")
-                return result
+            # Copy results from pipeline
+            result_dict["success"] = pipeline_result.success
+            result_dict["cleaned_text"] = pipeline_result.ordered_text
+            result_dict["extracted_profile"] = pipeline_result.extracted_profile
+            result_dict["total_years_experience"] = pipeline_result.total_years_experience
+            result_dict["seniority_level"] = pipeline_result.seniority_level
+            result_dict["markdown"] = pipeline_result.intermediate_markdown
+            result_dict["metadata"]["total_pages"] = pipeline_result.total_pages
+            result_dict["metadata"]["extraction_status"] = pipeline_result.metadata.get("extraction_status", "unknown")
+            
+            if pipeline_result.error:
+                result_dict["errors"].append(pipeline_result.error)
+                logger.error(f"[CVParser] Pipeline error: {pipeline_result.error}")
+                return result_dict
 
-            # Extract sections from pipeline result
-            sections_dict = {}
-            for section_type, extracted_section in pipeline_result.extracted_sections.items():
-                sections_dict[section_type] = extracted_section.content
-
-            result["sections"] = sections_dict
-            result["cleaned_text"] = pipeline_result.ordered_text
-            result["metadata"]["ordered_text_length"] = len(pipeline_result.ordered_text)
-            result["metadata"]["intermediate_markdown_length"] = len(pipeline_result.intermediate_markdown)
-            result["metadata"]["sections_extracted"] = len(sections_dict)
-            result["metadata"]["pages"] = pipeline_result.total_pages
-            if pipeline_result.metadata:
-                result["metadata"].update(pipeline_result.metadata)
-
-            # Generate markdown from sections (beautified version for output)
-            personal_info = self._extract_personal_info_from_sections(sections_dict)
-            personal_info_full = {
-                "name": personal_info.get("name", "Unknown"),
-                "email": personal_info.get("email", ""),
-                "phone": personal_info.get("phone", ""),
-                "location": personal_info.get("location", ""),
-                "summary": sections_dict.get("summary", ""),
-            }
-
-            sections_for_markdown = self._structure_sections_for_markdown_from_dict(
-                sections_dict
-            )
-
-            markdown_config = (
-                self.config.markdown_config or CVMarkdownConfig()
-            )
-            markdown = MarkdownGenerator.generate_markdown(
-                personal_info_full,
-                sections_for_markdown,
-                source_file=os.path.basename(pdf_path),
-                config=markdown_config,
-            )
-            markdown = MarkdownGenerator.normalize_markdown(markdown)
-            result["markdown"] = markdown
-
-            # Save beautified markdown
-            if self.config.output_markdown_dir:
-                markdown_path = os.path.join(
-                    self.config.output_markdown_dir,
-                    f"{Path(pdf_path).stem}_formatted.md"
-                )
-                MarkdownGenerator.save_markdown(markdown, markdown_path)
-                result["metadata"]["markdown_formatted"] = markdown_path
-                logger.info(f"[Geometric Pipeline] Formatted markdown: {markdown_path}")
-
-            # Optional: LLM post-processing for structured schema
-            if self.config.use_llm_extraction and self.llm_extractor:
-                logger.info("[Geometric Pipeline] Running optional LLM schema extraction...")
-                json_data = self.llm_extractor.extract(markdown)
-                if json_data:
-                    result["json_extracted"] = json_data
-
-                    if self.config.output_json_dir:
-                        json_path = os.path.join(
-                            self.config.output_json_dir,
-                            f"{Path(pdf_path).stem}_schema.json"
-                        )
-                        with open(json_path, "w", encoding="utf-8") as f:
-                            json.dump(json_data, f, indent=2, ensure_ascii=False)
-                        result["metadata"]["json_schema"] = json_path
-                        logger.info(f"[Geometric Pipeline] Schema JSON: {json_path}")
-
-            result["success"] = True
             logger.info(
-                f"[Geometric Pipeline] Success: {len(sections_dict)} sections from {pipeline_result.total_pages} pages"
+                f"[CVParser] Success: "
+                f"{pipeline_result.total_pages} pages, "
+                f"{pipeline_result.total_years_experience} years exp, "
+                f"{pipeline_result.seniority_level} seniority"
             )
 
         except Exception as e:
-            logger.error(f"[Geometric Pipeline] Unexpected error: {e}", exc_info=True)
-            result["errors"].append(f"Pipeline error: {str(e)}")
+            logger.error(f"[CVParser] Unexpected error: {e}", exc_info=True)
+            result_dict["errors"].append(f"Parsing error: {str(e)}")
 
-        return result
+        return result_dict
 
-    def _extract_personal_info(self, lines: list) -> Dict[str, str]:
+    def parse_batch(
+        self,
+        pdf_dir: str,
+        output_dir: Optional[str] = None
+    ) -> Dict[str, Dict[str, Any]]:
         """
-        Extract personal info (name, email, phone, location) from first lines.
+        Parse multiple CV PDFs in a directory.
 
-        Simple heuristic: look for patterns in first 50 lines.
+        Args:
+            pdf_dir (str): Directory containing PDF files
+            output_dir (str): Optional output directory for results
+
+        Returns:
+            Dict[filename] → parse_cv result
         """
-        import re
+        results = {}
+        pdf_files = list(Path(pdf_dir).glob("*.pdf"))
 
-        personal_info = {
-            "name": "",
-            "email": "",
-            "phone": "",
-            "location": "",
-        }
+        logger.info(f"[CVParser] Batch: Starting {len(pdf_files)} files")
 
-        text = "\n".join(lines)
+        for pdf_file in pdf_files:
+            logger.info(f"[CVParser] Batch: {pdf_file.name}")
+            result = self.parse_cv(str(pdf_file))
+            results[pdf_file.name] = result
 
-        # Email pattern
-        email_match = re.search(
-            r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text
-        )
-        if email_match:
-            personal_info["email"] = email_match.group()
+            # Save individual results if output_dir specified
+            if output_dir and result["success"]:
+                output_path = os.path.join(output_dir, f"{pdf_file.stem}_result.json")
+                os.makedirs(output_dir, exist_ok=True)
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(result, f, indent=2, ensure_ascii=False)
 
-        # Phone pattern (basic)
-        phone_match = re.search(
-            r'(?:\+\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{2,4}[-.\s]?\d{2,4}',
-            text,
-        )
-        if phone_match:
-            personal_info["phone"] = phone_match.group().strip()
-
-        # Name: typically first few non-empty lines
-        for line in lines:
-            if line.strip() and len(line.strip()) < 50:
-                # Likely a name if short and early
-                if personal_info["email"] in line or personal_info["phone"] in line:
-                    continue  # Skip if it contains contact info
-                if not personal_info["name"]:
-                    personal_info["name"] = line.strip()
-                    break
-
-        return personal_info
-
-    def _extract_summary_from_sections(self, sections_grouped: Dict) -> str:
-        """Extract summary/objective from detected sections."""
-        summary_section = sections_grouped.get("summary", {})
-        if summary_section and summary_section.get("content"):
-            content = summary_section["content"]
-            return " ".join(content[:3]) if content else ""
-        return ""
-
-    def _structure_sections_for_markdown(self, sections_grouped: Dict) -> Dict:
-        """Structure grouped sections for markdown generation."""
-        structured = {
-            "work_experience": [],
-            "education": [],
-            "skills": {},
-            "projects": [],
-            "certifications": {},
-        }
-
-        # Work experience: parse lines into structured format
-        if "experience" in sections_grouped:
-            exp_lines = sections_grouped["experience"]["content"]
-            # Simple parsing: each entry might be multi-line
-            # Group by company lines (heuristic: all caps or title case)
-            exp_blocks = self._parse_experience_blocks(exp_lines)
-            structured["work_experience"] = exp_blocks
-
-        # Education
-        if "education" in sections_grouped:
-            edu_lines = sections_grouped["education"]["content"]
-            edu_blocks = self._parse_education_blocks(edu_lines)
-            structured["education"] = edu_blocks
-
-        # Skills
-        if "skills" in sections_grouped:
-            skill_lines = sections_grouped["skills"]["content"]
-            skill_dict = self._parse_skills(skill_lines)
-            structured["skills"] = skill_dict
-
-        # Projects
-        if "projects" in sections_grouped:
-            proj_lines = sections_grouped["projects"]["content"]
-            proj_blocks = self._parse_project_blocks(proj_lines)
-            structured["projects"] = proj_blocks
-
-        # Certifications, Languages, Awards, Interests
-        cert_dict = {}
-        for section_type in ["certifications", "languages", "awards", "interests"]:
-            if section_type in sections_grouped:
-                lines = sections_grouped[section_type]["content"]
-                cert_dict[section_type] = [l.strip() for l in lines if l.strip()]
-
-        structured["certifications"] = cert_dict
+        logger.info(f"[CVParser] Batch: Complete {len(results)} files")
+        return results
 
         return structured
 

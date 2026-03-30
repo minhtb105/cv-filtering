@@ -208,23 +208,21 @@ SENTENCE_ENDING = re.compile(r'[.!?,;]$')
 
 def _looks_like_header(text: str) -> bool:
     """
-    Quick heuristic for Step 3c / Step 5A:
-    A section header is short, mostly uppercase, and has no trailing sentence punct.
+    **SIMPLIFIED:** Only check if text does NOT end with sentence-ending punctuation.
+    
+    Geometric rule 4: Does not end with sentence-ending punctuation (. ! ? ,),
+    but allows colons (:) as they're common in headers like "SKILLS:".
+    
+    All other heuristics (word count, uppercase ratio, length) are removed.
+    Geometric rules 1, 2, 3, 5 are enforced in classify_blocks() instead.
     """
     text = text.strip()
-    if not text or len(text) > 60:
+    if not text:
         return False
-    words = text.split()
-    if len(words) > 5:
-        return False
-    # Allow ":" suffix (e.g. "SKILLS:") but not ".", "!", "?", ","
+    # Rule 4: Does not end with . ! ? , (but : is OK)
     if text[-1] in ".!?,":
         return False
-    alpha = [c for c in text if c.isalpha()]
-    if not alpha:
-        return False
-    upper_ratio = sum(1 for c in alpha if c.isupper()) / len(alpha)
-    return upper_ratio >= 0.60
+    return True
 
 
 def classify_blocks(
@@ -234,31 +232,30 @@ def classify_blocks(
     med_h: float,
 ) -> List[Block]:
     """
-    Classify each block:
-      full_width_header  - single-line block whose text looks like a section
-                           header AND has no other words at the same Y band
-                           anywhere else on the page (cross-column criterion 1).
-      full_width_body    - multi-line block spanning ≥75% of page width.
-      left_col           - block whose x_center is in the left half of the page.
-      right_col          - block whose x_center is in the right half.
-
-    The original 5-criterion spec is preserved for full_width_header detection:
-      1. No word outside this line's X range at the same Y (cross-column).
-      2. x_span < 60% page width.
-      3. (implicit) single-line block — multi-line blocks are never headers.
-      4. Does not end with sentence-ending punctuation (. ! ? ,).
-      5. Text passes _looks_like_header() (short, mostly uppercase).
+    Classify each block using strict geometric rules (5 criteria for full_width_header):
+    
+    For a block to be classified as 'full_width_header', ALL of these must be true:
+      1. No other word at the same Y band across the full page width
+      2. x_span < 0.60 * page_width
+      3. Vertical gap above AND below the block > 1.5 * median_line_height
+      4. Does not end with sentence-ending punctuation (except ":")
+      5. x_center in range [0.30, 0.70] * page_width (not on far edges)
+    
+    If a block fails any rule, it's classified by column position:
+      - full_width_body: if x_span >= 0.75 * page_width
+      - left_col: if x_center < 0.45 * page_width
+      - right_col: otherwise
     """
     page_w = page_geom.width
     all_words_on_page = [wd for ln in all_lines for wd in ln.words]
 
     for block in blocks:
-        # Only single-line blocks can be standalone section headers
+        # Only single-line blocks can be full_width_header
         if len(block.lines) == 1:
             ln = block.lines[0]
             text = ln.text.strip()
 
-            # Criterion 1 — cross-column: no words at same Y outside this line's X range
+            # RULE 1: No other word at the same Y band across the full page (cross-column)
             y_band = ln.y_center
             y_tol = ln.height * 0.5
             others = [
@@ -266,15 +263,39 @@ def classify_blocks(
                 if abs(wd.y_center - y_band) <= y_tol
                 and (wd.x1 < ln.x0 - 5 or wd.x0 > ln.x1 + 5)
             ]
-            crit1 = len(others) == 0
+            rule1 = len(others) == 0
 
-            # Criterion 2 — x_span < 60% page width
-            crit2 = ln.x_span < 0.60 * page_w
+            # RULE 2: x_span < 0.60 * page_width
+            rule2 = ln.x_span < 0.60 * page_w
 
-            # Criteria 4+5 combined via _looks_like_header
-            crit45 = _looks_like_header(text)
+            # RULE 3: Vertical gap above AND below > 1.5 * median_line_height
+            gap_above = float('inf')
+            gap_below = float('inf')
+            
+            # Find the closest line above
+            lines_above = [l for l in all_lines if l.y1 < ln.y0]
+            if lines_above:
+                closest_above = max(lines_above, key=lambda l: l.y1)
+                gap_above = ln.y0 - closest_above.y1
+            
+            # Find the closest line below
+            lines_below = [l for l in all_lines if l.y0 > ln.y1]
+            if lines_below:
+                closest_below = min(lines_below, key=lambda l: l.y0)
+                gap_below = closest_below.y0 - ln.y1
+            
+            threshold_gap = 1.5 * med_h
+            rule3 = (gap_above > threshold_gap) and (gap_below > threshold_gap)
 
-            if crit1 and crit2 and crit45:
+            # RULE 4: Does not end with sentence-ending punctuation (except ":")
+            rule4 = _looks_like_header(text)
+
+            # RULE 5: x_center in range [0.30, 0.70] * page_width
+            x_center_normalized = ln.x_center / page_w
+            rule5 = 0.30 <= x_center_normalized <= 0.70
+
+            # Apply all 5 rules
+            if rule1 and rule2 and rule3 and rule4 and rule5:
                 block.block_type = "full_width_header"
                 continue
 

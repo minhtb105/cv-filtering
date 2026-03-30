@@ -3,8 +3,6 @@ Test real PDF files from sample/ directory
 Saves markdown output to output/markdown/
 """
 
-import os
-import sys
 from pathlib import Path
 
 from src.extraction import PDFExtractor
