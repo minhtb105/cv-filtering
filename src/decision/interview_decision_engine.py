@@ -30,7 +30,7 @@ Evidence:
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class PreviousAssessment:
     
     def days_since(self) -> int:
         """Số ngày kể từ lần phỏng vấn trước."""
-        delta = datetime.utcnow() - self.assessed_at
+        delta = datetime.now(timezone.utc) - self.assessed_at
         return delta.days
 
 
