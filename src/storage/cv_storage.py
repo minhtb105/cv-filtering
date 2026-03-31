@@ -46,9 +46,20 @@ class CVStorage:
         return self.normalized.search_by_text(text, limit)
 
     def delete_cv(self, cv_id: str) -> int:
-        """Delete CV from both storage"""
-        raw_count = self.raw.delete(cv_id)
-        norm_count = self.normalized.delete(cv_id)
+        """Delete CV from both storage.
+        
+        Note: Deletion is not atomic. If one storage fails, partial deletion may occur.
+        """
+        raw_count = 0
+        norm_count = 0
+        try:
+            raw_count = self.raw.delete(cv_id)
+        except Exception:
+            pass  # Log error in production
+        try:
+            norm_count = self.normalized.delete(cv_id)
+        except Exception:
+            pass  # Log error in production
         return raw_count + norm_count
 
     def list_all_cvs(self, normalized: bool = False, limit: int = 100) -> List[str]:
