@@ -5,7 +5,7 @@ Models for job descriptions and score breakdowns used in the CV Intelligence Pla
 """
 
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 from src.models.domain.candidate import LocationFormat
 from src.models.validation.enums import SeniorityLevel
@@ -29,6 +29,14 @@ class JobDescription(BaseModel):
     languages_required: List[str] = Field(default_factory=list, description="Required languages")
     remote_eligible: bool = Field(default=False, description="Remote/hybrid eligible")
     created_at: datetime = Field(default_factory=lambda: datetime.now(datetime.timezone.utc), description="Created timestamp")
+    
+    @model_validator(mode='after')
+    def validate_experience_range(self):
+        if self.experience_years_min is not None and self.experience_years_max is not None:
+            if self.experience_years_min > self.experience_years_max:
+                raise ValueError("experience_years_min cannot exceed experience_years_max")
+        
+        return self
     
     class Config:
         frozen = False
