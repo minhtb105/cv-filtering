@@ -56,6 +56,7 @@ demo/data/
 demo/output/
 demo/vector_index/
 demo/embeddings/
+output/markdown/
 
 # Node modules
 node_modules/
