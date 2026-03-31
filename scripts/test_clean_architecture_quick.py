@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 """Quick test of refactored Clean Architecture modules"""
+import sys
 
 
 def test_post_processor():
