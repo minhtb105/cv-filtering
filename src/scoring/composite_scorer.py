@@ -75,11 +75,24 @@ class CompositeScorer:
     
     def update_weights(self, weights: Dict[str, float]):
         """Update scoring weights."""
-        self.weights = weights
-        self.skill_scorer.weight = weights.get("skill", 0.3)
-        self.experience_scorer.weight = weights.get("experience", 0.35)
-        self.education_scorer.weight = weights.get("education", 0.2)
-        self.interview_scorer.weight = weights.get("interview", 0.15)
+        default_weights = {
+            "skill": 0.3,
+            "experience": 0.35,
+            "education": 0.2,
+            "interview": 0.15,
+        }
+
+        self.weights = {**default_weights, **weights}
+        
+        for key, value in self.weights.items():
+            if value < 0:
+                raise ValueError(f"Weight for '{key}' must be non-negative, got {value}")
+        
+        self.skill_scorer.weight = self.weights["skill"]
+        self.experience_scorer.weight = self.weights["experience"]
+        self.education_scorer.weight = self.weights["education"]
+        self.interview_scorer.weight = self.weights["interview"]
+        
         logger.info(f"Updated scoring weights: {weights}")
     
     def get_weights(self) -> Dict[str, float]:
