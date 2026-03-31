@@ -5,7 +5,7 @@ Comprehensive validation tests for all new models
 
 import pytest
 from datetime import datetime
-from src.schemas_enhanced import (
+from src.schemas import (
     # Validators
     PhoneValidator,
     DateValidator,
@@ -266,7 +266,7 @@ class TestSkill:
     
     def test_skill_with_evidence(self):
         """Skill with evidence linking"""
-        from src.schemas_enhanced import SkillEvidence
+        from src.schemas import SkillEvidence
         
         skill = Skill(
             name="React.js",
@@ -421,20 +421,19 @@ class TestCandidateProfile:
                     company="Company B",
                     title="Senior Engineer",
                     start_date="2023-01",
-                    end_date=None  # Current, ~2 years
+                    end_date="2024-01"  # 12 months
                 )
             ]
         )
         
         derived = profile.compute_derived_fields()
         
-        # Total: ~24 months (12 + 12 approx)
-        assert derived.total_experience_months >= 20  # Allow ~24
-        assert derived.seniority == SeniorityLevel.MID  # ~2 years = MID
+        # Total: 24 months (12 + 12)
+        assert derived.total_experience_months == 24
+        assert derived.seniority == SeniorityLevel.MID  # 2 years = MID
         assert derived.skill_count == 3
         assert derived.current_role == "Senior Engineer"
         assert derived.years_in_current_role > 0
-
 
 # ============================================================================
 # MATCHING SCORE TESTS
@@ -551,7 +550,7 @@ class TestIntegration:
         # Verify
         assert profile.contact.phone == "+84987654321"
         assert profile.derived_fields.total_experience_months > 0
-        # 9 years total = SENIOR (< 10 >= 5)
+        # ~11 years total (varies with current date) = SENIOR or LEAD
         assert profile.derived_fields.seniority in [SeniorityLevel.SENIOR, SeniorityLevel.LEAD]
         assert len(profile.languages) == 2
 
