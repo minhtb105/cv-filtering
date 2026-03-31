@@ -3,11 +3,13 @@ Ollama Translation Service
 Translates Vietnamese CV text to English
 """
 
-import json
+import logging
 import requests
 from typing import Optional
 from src.config import settings
 
+
+logger = logging.getLogger(__name__)
 
 class OllamaTranslator:
     """Translation service using Ollama"""
@@ -49,9 +51,16 @@ class OllamaTranslator:
                 result = response.json()
                 return result.get("response", text).strip()
             else:
+                logger.warning(
+                    "Translation failed with status %d: %s",
+                    response.status_code,
+                    response.text[:200]
+                )
+                
                 return text
 
-        except Exception:
+        except Exception as e:
+            logger.error("Translation request failed: %s", e)
             return text
 
     def _build_prompt(self, text: str, source_lang: str, target_lang: str) -> str:
