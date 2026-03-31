@@ -100,7 +100,7 @@ class CVParser:
             "errors": [],
             "metadata": {
                 "pdf_path": pdf_path,
-                "file_size": os.path.getsize(pdf_path) if os.path.exists(pdf_path) else 0,
+                "file_size": 0,  # Will be set after validation
                 "pipeline": "Clean Architecture (PDFExtractor → HRExtractorAgent → PostProcessor)",
             },
         }
@@ -128,6 +128,7 @@ class CVParser:
             result_dict["markdown"] = pipeline_result.intermediate_markdown
             result_dict["metadata"]["total_pages"] = pipeline_result.total_pages
             result_dict["metadata"]["extraction_status"] = pipeline_result.metadata.get("extraction_status", "unknown")
+            result_dict["metadata"]["file_size"] = os.path.getsize(pdf_path)
             
             if pipeline_result.error:
                 result_dict["errors"].append(pipeline_result.error)
@@ -180,52 +181,9 @@ class CVParser:
                     json.dump(result, f, indent=2, ensure_ascii=False)
 
         logger.info(f"[CVParser] Batch: Complete {len(results)} files")
+        
         return results
-
-        return structured
-
-    def _parse_experience_blocks(self, lines: list) -> list:
-        """Parse work experience blocks from lines."""
-        blocks = []
-        current_block = {}
-
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-
-            # Simple heuristic: if line looks like company/position (common patterns)
-            if any(
-                keyword in line.lower()
-                for keyword in ["company:", "position:", "role:", "at ", "-"]
-            ):
-                if current_block:
-                    blocks.append(current_block)
-                current_block = {"company": "", "position": "", "duration": "", "description": []}
-
-                if "company:" in line.lower():
-                    current_block["company"] = line.split(":", 1)[1].strip()
-                elif "position:" in line.lower():
-                    current_block["position"] = line.split(":", 1)[1].strip()
-                elif "role:" in line.lower():
-                    current_block["position"] = line.split(":", 1)[1].strip()
-                elif " - " in line:
-                    parts = line.split(" - ")
-                    current_block["company"] = parts[0].strip()
-                    current_block["position"] = parts[1].strip() if len(parts) > 1 else ""
-
-            else:
-                # It's description
-                if current_block or line:
-                    if not current_block:
-                        current_block = {"company": "Unknown", "position": line, "duration": "", "description": []}
-                    current_block["description"].append(line)
-
-        if current_block:
-            blocks.append(current_block)
-
-        return blocks
-
+    
     def _parse_education_blocks(self, lines: list) -> list:
         """Parse education blocks from lines."""
         blocks = []
@@ -320,7 +278,7 @@ class CVParser:
             blocks.append(current_block)
 
         return blocks
-
+    
     def _extract_personal_info_from_sections(self, sections_dict: Dict[str, str]) -> Dict[str, str]:
         """
         Extract personal info from extracted sections (from geometric pipeline).
@@ -371,53 +329,4 @@ class CVParser:
                 personal_info["location"] = location_match.group(1).strip()
 
         return personal_info
-
-    def _structure_sections_for_markdown_from_dict(self, sections_dict: Dict[str, str]) -> Dict:
-        """
-        Structure sections dictionary for markdown generation.
-        
-        Converts flat section dictionary from pipeline into structured format
-        expected by MarkdownGenerator.
-        """
-        structured = {
-            "work_experience": [],
-            "education": [],
-            "skills": {},
-            "projects": [],
-            "certifications": {},
-        }
-
-        # Work experience
-        if "experience" in sections_dict:
-            exp_lines = sections_dict["experience"].split("\n")
-            exp_blocks = self._parse_experience_blocks(exp_lines)
-            structured["work_experience"] = exp_blocks
-
-        # Education
-        if "education" in sections_dict:
-            edu_lines = sections_dict["education"].split("\n")
-            edu_blocks = self._parse_education_blocks(edu_lines)
-            structured["education"] = edu_blocks
-
-        # Skills
-        if "skills" in sections_dict:
-            skill_lines = sections_dict["skills"].split("\n")
-            skill_dict = self._parse_skills(skill_lines)
-            structured["skills"] = skill_dict
-
-        # Projects
-        if "projects" in sections_dict:
-            proj_lines = sections_dict["projects"].split("\n")
-            proj_blocks = self._parse_project_blocks(proj_lines)
-            structured["projects"] = proj_blocks
-
-        # Certifications, Languages, Awards, Interests as lists
-        cert_dict = {}
-        for section_type in ["certifications", "languages", "awards", "interests"]:
-            if section_type in sections_dict:
-                lines = sections_dict[section_type].split("\n")
-                cert_dict[section_type] = [l.strip() for l in lines if l.strip()]
-
-        structured["certifications"] = cert_dict
-
-        return structured
+    
