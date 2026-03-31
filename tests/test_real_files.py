@@ -3,9 +3,6 @@ Test real PDF files from sample/ directory
 Saves markdown output to output/markdown/
 """
 
-# import sys
-# sys.path.insert(0, '.')
-
 from pathlib import Path
 from src.extraction.cv_parser import CVParser
 
