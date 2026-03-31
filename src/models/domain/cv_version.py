@@ -38,7 +38,7 @@ class CVVersion(BaseModel):
     profile: Optional['CandidateProfile'] = Field(None, description="Parsed candidate profile")
     language: Optional[SourceLanguage] = Field(None, description="Detected language (vi/en)")
     translation_status: TranslationStatus = Field(
-        default="pending", description="Translation status"
+        default=TranslationStatus.PENDING, description="Translation status"
     )
     extraction_confidence: float = Field(default=0.0, ge=0, le=1, description="Extraction confidence score")
 
