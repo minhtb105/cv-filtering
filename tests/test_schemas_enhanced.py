@@ -4,7 +4,6 @@ Comprehensive validation tests for all new models
 """
 
 import pytest
-from datetime import datetime
 from src.schemas import (
     # Validators
     PhoneValidator,
@@ -184,12 +183,12 @@ class TestCertification:
             name="AWS Solutions Architect",
             issuer="Amazon Web Services",
             issue_date="2023-01",
-            expiry_date="2025-01",
+            expiry_date="2030-01",
             credential_id="CERT-123456"
         )
         assert cert.name == "AWS Solutions Architect"
-        assert cert.is_current is True
-    
+        assert cert.is_current is True 
+           
     def test_certification_date_normalization(self):
         """Dates auto-normalize"""
         cert = Certification(
