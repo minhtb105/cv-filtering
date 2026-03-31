@@ -56,7 +56,8 @@ demo/data/
 demo/output/
 demo/vector_index/
 demo/embeddings/
-output/markdown/
+output/
+sample/
 
 # Node modules
 node_modules/
@@ -76,6 +77,5 @@ Thumbs.db
 *.pickle
 .cache/
 
-sample/
 .antigravity/
 .context/
