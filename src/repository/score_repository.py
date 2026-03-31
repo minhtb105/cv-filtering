@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.repository.base_repository import BaseRepository
 
@@ -28,7 +28,7 @@ class ScoreRepository(BaseRepository):
         try:
             self.scores[key] = {
                 **value,
-                "stored_at": datetime.now(datetime.timezone.utc).isoformat(),
+                "stored_at": datetime.now(timezone.utc).isoformat(),
             }
             self._track_history(key, value)
             logger.info(f"Stored score for {key}")
@@ -67,7 +67,7 @@ class ScoreRepository(BaseRepository):
         
         history_entry = {
             **score,
-            "recorded_at": datetime.now(datetime.timezone.utc).isoformat(),
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
             "sequence": len(self.score_history[key]) + 1,
         }
         
