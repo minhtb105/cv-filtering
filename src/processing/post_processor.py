@@ -313,7 +313,9 @@ class PostProcessor:
         
         # Try month-year format
         try:
-            return PostProcessor.normalize_date(date_str)
+            normalized = PostProcessor.normalize_date(date_str)
+            if normalized:
+                return datetime.strptime(normalized, "%Y-%m-%d")
         except:
             pass
         
@@ -354,11 +356,13 @@ class PostProcessor:
         
         if profile.experience and len(profile.experience) > 0:
             # Get most recent role title (usually first in the list if sorted by date desc)
-            most_recent_title = profile.experience[0].title.lower()
-            
-            # Check if title contains seniority keywords
-            title_level = self._extract_level_from_title(most_recent_title)
-            
+            most_recent_title = profile.experience[0].title
+            if most_recent_title:
+                most_recent_title = most_recent_title.lower()
+                # Check if title contains seniority keywords
+                title_level = self._extract_level_from_title(most_recent_title)
+            else:
+                title_level = None            
             # Boost logic: if title suggests higher level, use it (but not degrade)
             if title_level and self._level_to_rank(title_level) > self._level_to_rank(base_level):
                 boosted_level = title_level
