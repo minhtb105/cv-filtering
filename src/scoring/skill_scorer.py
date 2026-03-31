@@ -22,7 +22,7 @@ class SkillScorer(BaseScorer):
         jd_skills = self._extract_skills(jd_data)
         
         if not jd_skills:
-            return 50  # Default if no skills in JD
+            return self.validate_score(50)  # Default if no skills in JD        
         
         # Calculate skill match percentage
         matched_count = 0
@@ -36,10 +36,11 @@ class SkillScorer(BaseScorer):
         match_percentage = (matched_count / len(jd_skills)) * 100
         
         # Bonus for extra skills
-        extra_skills = len(cv_skills) - matched_count
+        extra_skills = max(0, len(cv_skills) - matched_count)
         bonus = min(10, extra_skills * 2)
         
-        score = match_percentage + bonus
+        score = match_percentage + bonus        
+        
         return self.validate_score(score)
     
     def _extract_skills(self, data: Dict[str, Any]) -> list:
