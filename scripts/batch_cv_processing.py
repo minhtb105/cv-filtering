@@ -14,11 +14,7 @@ import sys
 import logging
 from pathlib import Path
 import json
-from datetime import datetime
-
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
+from datetime import datetime, timezone
 from src.extraction import CVParser, CVParsingConfig, LLMExtractionConfig, CVMarkdownConfig
 
 
@@ -87,7 +83,7 @@ def parse_arguments():
 def generate_report(results: list, output_file: str = "cv_parsing_report.json"):
     """Generate summary report of parsing results."""
     report = {
-        "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "total_files": len(results),
         "successful": sum(1 for r in results if r["success"]),
         "failed": sum(1 for r in results if not r["success"]),
