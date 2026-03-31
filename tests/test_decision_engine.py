@@ -400,7 +400,8 @@ class TestIntegration:
         assert len(result.evidence) > 0
         assert result.reasoning
         assert 0 <= result.confidence <= 1
-        assert result.to_dict()  # Should not raise
+        d = result.to_dict()  # Should not raise
+        assert isinstance(d, dict)
     
     def test_full_returning_workflow(self):
         """Simulate workflow cho returning candidate."""
