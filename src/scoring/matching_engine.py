@@ -129,7 +129,7 @@ class SkillNormalization:
         normalized = SkillNormalization.normalize(skill)
         
         for canonical, aliases in SkillNormalization.ALIASES.items():
-            if normalized == canonical.lower() or string in aliases:
+            if normalized == canonical.lower() or normalized in aliases:
                 return canonical
         
         return normalized
