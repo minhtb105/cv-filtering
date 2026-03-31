@@ -7,6 +7,7 @@ Falls back to heuristics if LLM is unavailable.
 
 import json
 import logging
+import requests
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
@@ -55,8 +56,6 @@ class OllamaClient:
     def _check_availability(self) -> bool:
         """Check if Ollama service is available."""
         try:
-            import requests
-
             response = requests.get(
                 f"{self.base_url}/api/tags", timeout=self.timeout
             )
@@ -89,8 +88,6 @@ class OllamaClient:
             return self._create_fallback_response(raw_text or "")
 
         try:
-            import requests
-
             payload = {
                 "model": model,
                 "prompt": prompt,
@@ -221,6 +218,7 @@ Return valid JSON with the following structure (use null for missing fields):
     "projects": [
         {{
             "name": "Project Name",
+            "company": "Company or organization name",
             "role": "Role in project",
             "start_date": "YYYY-MM",
             "end_date": "YYYY-MM",
@@ -488,10 +486,14 @@ Return ONLY valid JSON following the schema provided. No explanations."""
 
     def _normalize_experience(self, data: Dict) -> CareerProgression:
         """Normalize experience data"""
+        start_date = data.get("start_date")
+        if not start_date:
+            logger.warning(f"Missing start_date for experience at {data.get('company', 'Unknown')}")
+        
         return CareerProgression(
             company=data.get("company", "Unknown"),
             title=data.get("title", "Unknown"),
-            start_date=data.get("start_date", "1900-01"),
+            start_date=start_date,  # Let domain model handle None appropriately
             end_date=data.get("end_date"),
             description=data.get("description"),
             skills_used=data.get("skills_used", []),
@@ -499,7 +501,6 @@ Return ONLY valid JSON following the schema provided. No explanations."""
             impact_score=data.get("impact_score", 3),
             evidence_strength=data.get("evidence_strength", 0.5)
         )
-
     def _normalize_project(self, data: Dict) -> Project:
         """Normalize project data"""
         # Try to create LLMProject first for enhanced validation
@@ -586,10 +587,21 @@ Return ONLY valid JSON following the schema provided. No explanations."""
         )
 
     def _normalize_language(self, data: Dict) -> Language:
-        """Normalize language data"""
+        """Normalize language data.
+        
+        Converts CEFR level from string to enum with proper error handling.
+        """
+        cefr_str = data.get("cefr_level", "B1")
+        try:
+            # Convert string to enum if necessary
+            cefr_level = CEFRLEVEL(cefr_str) if isinstance(cefr_str, str) else cefr_str
+        except ValueError:
+            logger.warning(f"Invalid CEFR level '{cefr_str}', defaulting to B1")
+            cefr_level = CEFRLEVEL.B1
+        
         return Language(
             name=data.get("name", "Unknown"),
-            cefr_level=data.get("cefr_level", CEFRLEVEL.B1),
+            cefr_level=cefr_level,
             native=data.get("native", False),
             confidence=data.get("confidence", 0.6)
         )
