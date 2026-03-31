@@ -46,12 +46,13 @@ class RawStorage:
             sort=[("extracted_at", -1)]
         )
 
-    def update_translation_status(self, cv_id: str, version: str, status: str):
+    def update_translation_status(self, cv_id: str, version: str, status: str) -> bool:
         """Update translation status"""
-        self.collection.update_one(
+        result = self.collection.update_one(
             {"cv_id": cv_id, "version": version},
             {"$set": {"translation_status": status}}
         )
+        return result.matched_count > 0
 
     def delete(self, cv_id: str) -> int:
         """Delete all versions of a CV"""
