@@ -358,7 +358,7 @@ JOB DESCRIPTION:
             title = first_line
         
         # Extract degree
-        degree = "bachelor"  # default
+        degree = ""  # default
         for keyword, normalized in self._DEGREE_MAP.items():
             if keyword in text_lower:
                 degree = normalized
@@ -421,13 +421,6 @@ JOB DESCRIPTION:
         else:
             return "junior"
     
-    @staticmethod
-    def _DEGREE_MAP():
-        return {
-            'phd': 'phd', 'doctorate': 'phd',
-            'master': 'master', "master's": 'master',
-            'bachelor': 'bachelor', "bachelor's": 'bachelor',
-        }
 
 
 # ---------------------------------------------------------------------------
