@@ -184,45 +184,38 @@ def lines_to_markdown_table(table_lines: List[Line]) -> str:
     if not rows:
         return ""
 
-    # Use first row as header
+    max_cols = max(len(r) for r in rows)
     header = rows[0]
-    separator = ["---"] * len(header)
+    # Pad header to max_cols
+    header = header + [""] * (max_cols - len(header))
+    separator = ["---"] * max_cols
     body = rows[1:] if len(rows) > 1 else []
 
-    lines = []
-    lines.append("| " + " | ".join(header) + " |")
-    lines.append("| " + " | ".join(separator) + " |")
+    lines_out = []
+    lines_out.append("| " + " | ".join(header) + " |")
+    lines_out.append("| " + " | ".join(separator) + " |")
     for row in body:
-        # Pad/trim to header width
-        padded = row[:len(header)] + [""] * max(0, len(header) - len(row))
-        lines.append("| " + " | ".join(padded) + " |")
+        padded = row[:max_cols] + [""] * max(0, max_cols - len(row))
+        lines_out.append("| " + " | ".join(padded) + " |")
 
-    return "\n".join(lines)
+    return "\n".join(lines_out)
 
 
 # ---------------------------------------------------------------------------
-# STEP 3c — Block classification
+# STEP 3c — Block classification (FIXED: Rule 5 mở rộng)
 # ---------------------------------------------------------------------------
 
 SENTENCE_ENDING = re.compile(r'[.!?,;]$')
 
+
 def _looks_like_header(text: str) -> bool:
     """
-    **SIMPLIFIED:** Only check if text does NOT end with sentence-ending punctuation.
-    
-    Geometric rule 4: Does not end with sentence-ending punctuation (. ! ? ,),
-    but allows colons (:) as they're common in headers like "SKILLS:".
-    
-    All other heuristics (word count, uppercase ratio, length) are removed.
-    Geometric rules 1, 2, 3, 5 are enforced in classify_blocks() instead.
+    Rule 4: text không kết thúc bằng . ! ? , (nhưng : được phép).
     """
     text = text.strip()
     if not text:
         return False
-    # Rule 4: Does not end with . ! ? , (but : is OK)
-    if text[-1] in ".!?,":
-        return False
-    return True
+    return text[-1] not in ".!?,"
 
 
 def classify_blocks(
@@ -232,30 +225,26 @@ def classify_blocks(
     med_h: float,
 ) -> List[Block]:
     """
-    Classify each block using strict geometric rules (5 criteria for full_width_header):
+    Classify blocks với 5 geometric rules.
     
-    For a block to be classified as 'full_width_header', ALL of these must be true:
-      1. No other word at the same Y band across the full page width
-      2. x_span < 0.60 * page_width
-      3. Vertical gap above AND below the block > 1.5 * median_line_height
-      4. Does not end with sentence-ending punctuation (except ":")
-      5. x_center in range [0.30, 0.70] * page_width (not on far edges)
+    FIX v1.1: Rule 5 mở rộng từ [0.30, 0.70] → [0.05, 0.95]
+    Lý do: CV headers thường căn trái (x_center ~0.10-0.25 với 2-column layout),
+    cũng có thể căn giữa (x_center ~0.45-0.55). Rule 5 ban đầu loại hết left-aligned headers.
     
-    If a block fails any rule, it's classified by column position:
-      - full_width_body: if x_span >= 0.75 * page_width
-      - left_col: if x_center < 0.45 * page_width
-      - right_col: otherwise
+    Thực tế: Rules 1-3 đã đủ mạnh để loại false positives. Rule 5 chỉ nên
+    loại bỏ content nằm TẬN CÙNG LỀ (< 5% hoặc > 95%) — thường là page numbers,
+    watermarks, không phải section headers.
     """
     page_w = page_geom.width
     all_words_on_page = [wd for ln in all_lines for wd in ln.words]
 
     for block in blocks:
-        # Only single-line blocks can be full_width_header
+        # Chỉ single-line blocks mới có thể là full_width_header
         if len(block.lines) == 1:
             ln = block.lines[0]
             text = ln.text.strip()
 
-            # RULE 1: No other word at the same Y band across the full page (cross-column)
+            # RULE 1: Không có word nào khác cùng Y-band trên toàn trang
             y_band = ln.y_center
             y_tol = ln.height * 0.5
             others = [
@@ -265,41 +254,38 @@ def classify_blocks(
             ]
             rule1 = len(others) == 0
 
-            # RULE 2: x_span < 0.60 * page_width
+            # RULE 2: x_span < 60% page width
             rule2 = ln.x_span < 0.60 * page_w
 
-            # RULE 3: Vertical gap above AND below > 1.5 * median_line_height
+            # RULE 3: Gap trên VÀ dưới > 1.5 × median_line_height
             gap_above = float('inf')
             gap_below = float('inf')
-            
-            # Find the closest line above
             lines_above = [l for l in all_lines if l.y1 < ln.y0]
             if lines_above:
                 closest_above = max(lines_above, key=lambda l: l.y1)
                 gap_above = ln.y0 - closest_above.y1
-            
-            # Find the closest line below
             lines_below = [l for l in all_lines if l.y0 > ln.y1]
             if lines_below:
                 closest_below = min(lines_below, key=lambda l: l.y0)
                 gap_below = closest_below.y0 - ln.y1
-            
             threshold_gap = 1.5 * med_h
             rule3 = (gap_above > threshold_gap) and (gap_below > threshold_gap)
 
-            # RULE 4: Does not end with sentence-ending punctuation (except ":")
+            # RULE 4: Không kết thúc bằng sentence-ending punctuation
             rule4 = _looks_like_header(text)
 
-            # RULE 5: x_center in range [0.30, 0.70] * page_width
+            # RULE 5 (FIXED): x_center không ở tận cùng lề trang
+            # Mở rộng từ [0.30, 0.70] → [0.05, 0.95]
+            # Loại: page numbers, watermarks ở tận góc
+            # Giữ: left-aligned headers, centered headers, right-aligned headers
             x_center_normalized = ln.x_center / page_w
-            rule5 = 0.30 <= x_center_normalized <= 0.70
+            rule5 = 0.05 <= x_center_normalized <= 0.95
 
-            # Apply all 5 rules
             if rule1 and rule2 and rule3 and rule4 and rule5:
                 block.block_type = "full_width_header"
                 continue
 
-        # Position-based classification for everything else
+        # Position-based classification
         b_xc = block.x_center / page_w
         b_xs = block.x_span / page_w
 
@@ -314,7 +300,7 @@ def classify_blocks(
 
 
 # ---------------------------------------------------------------------------
-# STEP 4 — Reading order assembly & intermediate markdown dump
+# STEP 4 — Reading order assembly (FIXED: y0 làm primary sort key)
 # ---------------------------------------------------------------------------
 
 def assemble_reading_order(
@@ -322,12 +308,19 @@ def assemble_reading_order(
     page_geoms: Dict[int, PageGeometry],
 ) -> str:
     """
-    Produce the intermediate markdown dump.
-    Format:
-    ========================================
-    PAGE: N | TYPE: BLOCK_TYPE [| BLOCK: idx]
-    ========================================
-    <text or markdown table>
+    Produce intermediate markdown dump.
+    
+    FIX v1.1: Reading order cho single-column CVs
+    
+    Vấn đề cũ: sort by (type_priority, y0) → tất cả headers lên đầu,
+    mất interleaving header-content trong trang. Output lộn xộn với LLM.
+    
+    Fix mới: detect layout type:
+    - Two-column layout (có cả left_col và right_col): dùng sort cũ
+      (full_width_header → left_col → right_col → body)
+    - Single-column layout: dùng y0 làm primary key, giữ đúng thứ tự dọc
+    
+    Kết quả: LLM nhận được text đúng thứ tự, context tốt hơn.
     """
     output_parts = []
 
@@ -335,24 +328,40 @@ def assemble_reading_order(
         blocks = page_blocks[page_num]
         geom = page_geoms[page_num]
 
-        # Sort blocks: headers first, then left_col, then right_col, then body
-        def sort_key(b: Block):
-            order = {
-                "full_width_header": 0,
-                "left_col": 1,
-                "right_col": 2,
-                "full_width_body": 3,
-                "table": 4,
-                "unknown": 5,
-            }
-            return (order.get(b.block_type, 5), b.y0)
+        if not blocks:
+            continue
 
-        sorted_blocks = sorted(blocks, key=sort_key)
-
-        # Check if page has two-column layout
-        left_blocks = [b for b in sorted_blocks if b.block_type == "left_col"]
-        right_blocks = [b for b in sorted_blocks if b.block_type == "right_col"]
+        left_blocks = [b for b in blocks if b.block_type == "left_col"]
+        right_blocks = [b for b in blocks if b.block_type == "right_col"]
         has_two_cols = bool(left_blocks and right_blocks)
+
+        if has_two_cols:
+            # Two-column layout: full_width_header → left_col → right_col
+            def sort_key_two_col(b: Block):
+                order = {
+                    "full_width_header": 0,
+                    "left_col": 1,
+                    "right_col": 2,
+                    "full_width_body": 3,
+                    "table": 4,
+                    "unknown": 5,
+                }
+                return (order.get(b.block_type, 5), b.y0)
+            sorted_blocks = sorted(blocks, key=sort_key_two_col)
+        else:
+            # Single-column layout: dùng y0 làm primary key
+            # type chỉ là tiebreaker (header trước body nếu cùng y0)
+            def sort_key_single_col(b: Block):
+                type_order = {
+                    "full_width_header": 0,
+                    "full_width_body": 1,
+                    "left_col": 2,
+                    "right_col": 3,
+                    "table": 4,
+                    "unknown": 5,
+                }
+                return (b.y0, type_order.get(b.block_type, 5))
+            sorted_blocks = sorted(blocks, key=sort_key_single_col)
 
         block_idx = 0
         for block in sorted_blocks:
@@ -379,10 +388,20 @@ def assemble_plain_text(
     for page_num in sorted(page_blocks.keys()):
         blocks = page_blocks[page_num]
 
-        def sort_key(b: Block):
-            order = {"full_width_header": 0, "left_col": 1, "right_col": 2,
-                     "full_width_body": 3, "table": 4, "unknown": 5}
-            return (order.get(b.block_type, 5), b.y0)
+        left_blocks = [b for b in blocks if b.block_type == "left_col"]
+        right_blocks = [b for b in blocks if b.block_type == "right_col"]
+        has_two_cols = bool(left_blocks and right_blocks)
+
+        if has_two_cols:
+            def sort_key(b):
+                order = {"full_width_header": 0, "left_col": 1, "right_col": 2,
+                         "full_width_body": 3, "table": 4, "unknown": 5}
+                return (order.get(b.block_type, 5), b.y0)
+        else:
+            def sort_key(b):
+                type_order = {"full_width_header": 0, "full_width_body": 1,
+                              "left_col": 2, "right_col": 3, "table": 4, "unknown": 5}
+                return (b.y0, type_order.get(b.block_type, 5))
 
         for block in sorted(blocks, key=sort_key):
             text = getattr(block, "_md_override", None) or block.text
@@ -398,14 +417,11 @@ def assemble_plain_text(
 # ---------------------------------------------------------------------------
 
 class PDFExtractor:
-    """
-    Geometric PDF extractor implementing the 5-step pipeline.
-    Falls back to pdfplumber plain text if PyMuPDF is unavailable.
-    """
+    """Geometric PDF extractor — 5-step pipeline (fixed v1.1)."""
 
     def extract(self, pdf_path: str) -> ExtractionResult:
         try:
-            import fitz  # PyMuPDF
+            import fitz
         except ImportError:
             logger.warning("PyMuPDF not installed, falling back to pdfplumber")
             return self._fallback_pdfplumber(pdf_path)
@@ -425,7 +441,6 @@ class PDFExtractor:
         page_geoms: Dict[int, PageGeometry] = {}
 
         for page_num, page in enumerate(doc, start=1):
-            # STEP 1
             words, geom = extract_words_from_page(page, page_num)
             page_geoms[page_num] = geom
 
@@ -433,33 +448,21 @@ class PDFExtractor:
                 page_blocks[page_num] = []
                 continue
 
-            # STEP 2
             lines = assemble_lines(words, page_num)
-
-            # STEP 3a
             med_h = _median_line_height(lines)
             blocks = group_lines_into_blocks(lines, geom)
 
-            # STEP 3b — detect table rows and convert
             processed_blocks: List[Block] = []
             table_accum: List[Line] = []
 
-            def flush_table():
+            def flush_table(page_num=page_num):
                 if len(table_accum) >= 2:
                     md_table = lines_to_markdown_table(table_accum)
-                    tb = Block(
-                        lines=list(table_accum),
-                        page=page_num,
-                        block_type="table",
-                    )
-                    # Store rendered markdown as a fake single line
+                    tb = Block(lines=list(table_accum), page=page_num, block_type="table")
                     tb._md_override = md_table
                     processed_blocks.append(tb)
                 elif table_accum:
-                    # Too short for a real table, treat as normal block
-                    processed_blocks.append(
-                        Block(lines=list(table_accum), page=page_num)
-                    )
+                    processed_blocks.append(Block(lines=list(table_accum), page=page_num))
                 table_accum.clear()
 
             for block in blocks:
@@ -471,14 +474,11 @@ class PDFExtractor:
                     processed_blocks.append(block)
 
             flush_table()
-
-            # STEP 3c
             classify_blocks(processed_blocks, lines, geom, med_h)
             page_blocks[page_num] = processed_blocks
 
         doc.close()
 
-        # STEP 4
         intermediate_md = assemble_reading_order(page_blocks, page_geoms)
         full_text = assemble_plain_text(page_blocks)
 
