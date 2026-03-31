@@ -51,7 +51,7 @@ class SkillMapper:
     }
 
     def __init__(self):
-        self.en_to_vi = {v: k for k, v in self.VI_TO_EN.items()}
+        self.en_to_vi: Dict[str, str] = {v: k for k, v in self.VI_TO_EN.items()}
 
     def to_english(self, skill: str) -> str:
         """Convert Vietnamese skill name to English"""
@@ -60,13 +60,20 @@ class SkillMapper:
 
     def to_vietnamese(self, skill: str) -> str:
         """Convert English skill name to Vietnamese"""
+        if not skill or not isinstance(skill, str):
+           return skill if skill is not None else ""
+        
         skill_lower = skill.lower().strip()
+        
         return self.en_to_vi.get(skill_lower, skill)
 
-    def is_vietnamese(self, text: str) -> bool:
+    def is_vietnamese(self, skill: str) -> bool:
         """Check if text contains Vietnamese characters"""
+        if not skill or not isinstance(skill, str):
+            return skill if skill is not None else ""
+        
         vietnamese_chars = "àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ"
-        return any(c in text.lower() for c in vietnamese_chars)
+        return any(c in skill.lower() for c in vietnamese_chars)
 
 
 __all__ = ["SkillMapper"]
