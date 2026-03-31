@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ class RescoringEvent:
         self.version = version
         self.reason = reason
         self.priority = priority
-        self.timestamp = datetime.now(datetime.timezone.utc).isoformat()
+        self.timestamp = datetime.now(timezone.utc).isoformat()
         self.status = "QUEUED"
     
     def to_dict(self) -> Dict[str, Any]:
@@ -148,7 +148,8 @@ class VersionManager:
         """Get events, optionally filtered by entity."""
         if entity_id:
             return [e for e in self.events if e.entity_id == entity_id]
-        return self.events
+        
+        return list(self.events)
     
     def get_cv_version(self, cv_id: str) -> int:
         """Get current version of CV."""
