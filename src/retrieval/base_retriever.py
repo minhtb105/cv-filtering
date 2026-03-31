@@ -20,6 +20,7 @@ class BaseRetriever(ABC):
         """Retrieve multiple items."""
         pass
     
+    @abstractmethod
     def is_cached(self, key: str) -> bool:
         """Check if item exists in cache."""
-        pass
+        return False
