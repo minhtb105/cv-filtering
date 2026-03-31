@@ -33,7 +33,7 @@ def process_sample_pdfs():
             })
             continue
 
-        if not result["success"]:
+        if not result.get("success", False):
             error_detail = result.get("errors", "Unknown error")
             print(f"  [FAIL] PDF parsing failed: {error_detail}")
             results.append({
@@ -43,7 +43,16 @@ def process_sample_pdfs():
             })
             continue
 
-        normalized = result["markdown"]
+        normalized = result.get("markdown", "")
+        if not normalized:
+            print(f"  [FAIL] No markdown content returned")
+            results.append({
+                "file": pdf_path.name,
+                "success": False,
+                "error": "No markdown content in result"
+            })
+            continue
+        
         metadata = {
             "language_detected": result.get("language", "unknown"),
             "sections_found": len(result.get("extracted_profile", {}) or {}),
