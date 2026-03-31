@@ -56,7 +56,7 @@ dependencies = [
     
     # Utils
     "python-dateutil==2.8.2",
-    "requests==2.31.0",
+    "requests>=2.32.0",
     
     # Testing & Logging
     "python-logging-loki==0.3.1"
