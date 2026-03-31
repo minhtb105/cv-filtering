@@ -12,8 +12,7 @@ class CacheConfig:
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
-    redis_password: str = None
-    
+    redis_password: Optional[str] = None    
     # TTL policies (in seconds) by data type
     CV_EXTRACTION_TTL: int = 48 * 3600  # 48 hours
     CV_METADATA_TTL: int = 24 * 3600    # 24 hours
