@@ -26,7 +26,7 @@ class BaseScorer(ABC):
     
     def get_detailed_score(self, cv_data: Dict[str, Any], jd_data: Dict[str, Any]) -> Dict[str, Any]:
         """Get detailed scoring breakdown."""
-        base_score = self.score(cv_data, jd_data)
+        base_score = self.validate_score(self.score(cv_data, jd_data))
         return {
             "scorer": self.name,
             "score": base_score,
