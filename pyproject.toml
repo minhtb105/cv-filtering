@@ -88,11 +88,8 @@ Issues = "https://github.com/minhtb/cv-intelligence/issues"
 # cv-api = "src.api.main:main"
 # cv-dashboard = "src.dashboard.main:main"
 
-[tool.setuptools]
-package-dir = {"" = "demo"}
-
 [tool.setuptools.packages.find]
-where = ["demo"]
+where = ["src"]
 
 [tool.black]
 line-length = 88
