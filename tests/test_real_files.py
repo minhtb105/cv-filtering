@@ -22,13 +22,24 @@ def process_sample_pdfs():
     for pdf_path in pdf_files:
         print(f"\nProcessing: {pdf_path.name}")
 
-        result = parser.parse_cv(str(pdf_path))
-        if not result["success"]:
-            print(f"  [FAIL] PDF parsing failed: {result['errors']}")
+        try:
+            result = parser.parse_cv(str(pdf_path))
+        except Exception as e:
+            print(f"  [FAIL] Exception during parsing: {e}")
             results.append({
                 "file": pdf_path.name,
                 "success": False,
-                "error": "Parsing failed"
+                "error": str(e)
+            })
+            continue
+
+        if not result["success"]:
+            error_detail = result.get("errors", "Unknown error")
+            print(f"  [FAIL] PDF parsing failed: {error_detail}")
+            results.append({
+                "file": pdf_path.name,
+                "success": False,
+                "error": error_detail
             })
             continue
 
