@@ -154,6 +154,7 @@ class TestCompositeScorer:
             "total_experience_years": 5,
             "seniority_level": "mid",
             "education": [{"degree_type": "Bachelors"}],
+            "certifications": [],
         }
         
         jd_data = {
@@ -167,8 +168,7 @@ class TestCompositeScorer:
         
         assert "composite_score" in scores
         assert 0 <= scores["composite_score"] <= 100
-        assert scores["has_interview"] is False
-    
+        assert scores["has_interview"] is False    
     def test_weight_update(self):
         """Test updating scorer weights."""
         scorer = CompositeScorer()
