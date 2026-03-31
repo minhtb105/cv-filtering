@@ -321,43 +321,6 @@ class CVParser:
 
         return blocks
 
-    def parse_batch(self, pdf_directory: str) -> list:
-        """
-        Parse multiple CVs from a directory.
-
-        Args:
-            pdf_directory: Directory containing PDF files
-
-        Returns:
-            List of parsing results
-        """
-        results = []
-
-        pdf_dir = Path(pdf_directory)
-        if not pdf_dir.exists():
-            logger.error(f"Directory not found: {pdf_directory}")
-            return results
-
-        pdf_files = list(pdf_dir.glob("*.pdf"))
-        logger.info(f"Found {len(pdf_files)} PDF files to process")
-
-        for i, pdf_path in enumerate(pdf_files, 1):
-            logger.info(f"Processing {i}/{len(pdf_files)}: {pdf_path.name}")
-
-            result = self.parse_cv(str(pdf_path))
-            results.append(result)
-
-            if not result["success"]:
-                logger.warning(f"Failed to parse: {pdf_path.name}")
-
-        # Summary
-        successful = sum(1 for r in results if r["success"])
-        logger.info(
-            f"Batch processing complete: {successful}/{len(pdf_files)} successful"
-        )
-
-        return results
-
     def _extract_personal_info_from_sections(self, sections_dict: Dict[str, str]) -> Dict[str, str]:
         """
         Extract personal info from extracted sections (from geometric pipeline).
