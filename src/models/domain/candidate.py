@@ -6,8 +6,10 @@ Comprehensive ATS-standard data models for candidate profiles.
 """
 
 from typing import List, Optional, Dict, Literal
+from distro import name
+from unicodedata import name
 from pydantic import BaseModel, Field, field_validator, model_validator
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 # Import enums and validators from our validation module
@@ -100,19 +102,13 @@ class Certification(BaseModel):
             raise ValueError(f"Invalid date format: {v}")
         return normalized
     
-    @model_validator(mode='before')
-    def check_date_order(cls, values):
+    @model_validator(mode='after')
+    def check_date_order(self):
         """Ensure issue_date <= expiry_date"""
-        if isinstance(values, dict):
-            issue = values.get('issue_date')
-            expiry = values.get('expiry_date')
-            
-            if issue and expiry:
-                if issue > expiry:
-                    raise ValueError("Issue date cannot be after expiry date")
-        
-        return values
-
+        if self.issue_date and self.expiry_date:
+            if self.issue_date > self.expiry_date:
+                raise ValueError("Issue date cannot be after expiry date")
+        return self
 
 class Language(BaseModel):
     """Structured language proficiency"""
@@ -165,9 +161,11 @@ class Skill(BaseModel):
             if v:
                 values['normalized_name'] = v.lower().strip()
             elif name:
-                # Simple normalization: lowercase, remove versions
-                normalized = re.sub(r'[\s\d\.\+\-#]', '', name.lower())
-                normalized = re.sub(r'(\.js|\.net|\.io|3\.0)', '', normalized)
+                # Normalize: lowercase, collapse whitespace, standardize separators
+                normalized = name.lower().strip()
+                normalized = re.sub(r'\s+', ' ', normalized)
+                # Remove version numbers but keep language identifiers
+                normalized = re.sub(r'\s*\d+(\.\d+)*\s*$', '', normalized)
                 values['normalized_name'] = normalized
         
         return values
@@ -252,9 +250,15 @@ class Education(BaseModel):
     field_of_study: Optional[str] = Field(None, description="Field of study")
     start_date: Optional[str] = Field(None, description="Start date (YYYY-MM)")
     end_date: Optional[str] = Field(None, description="End date (YYYY-MM)")
-    gpa: Optional[float] = Field(None, ge=0, le=4, description="GPA (0-4 scale)")
+    gpa_scale: Optional[float] = Field(None, description="Max GPA scale (e.g., 4.0, 5.0, 10.0)")
+    gpa: Optional[float] = Field(None, ge=0, description="GPA score")
     honors: Optional[str] = Field(None, description="Honors (cum laude, magna cum laude, etc)")
     description: Optional[str] = Field(None, description="Additional details")
+
+    @property
+    def normalized_gpa(self):
+        if self.gpa and self.gpa_scale:
+            return (self.gpa / self.gpa_scale) * 4.0
     
     class Config:
         frozen = False
@@ -301,7 +305,7 @@ class ParsingMetadata(BaseModel):
     parser_version: str = Field(..., description="Version of parser used")
     extraction_method: str = Field(..., description="PDF extraction method")
     confidence_score: float = Field(default=0.0, ge=0, le=1, description="Overall extraction confidence")
-    parsed_at: datetime = Field(default_factory=lambda: datetime.now(datetime.timezone.utc), description="Parsing timestamp")
+    parsed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Parsing timestamp")
     raw_text_length: int = Field(default=0, description="Length of raw extracted text")
     source_language: str = Field(default="en", description="Detected source language")
     translation_required: bool = Field(default=False, description="Was translation needed")
