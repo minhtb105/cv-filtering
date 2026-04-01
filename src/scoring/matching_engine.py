@@ -46,7 +46,10 @@ class SkillNormalization:
         'react.js': ['react', 'reactjs'],
         'vue.js': ['vuejs', 'vue'],
         'asp.net': ['aspnet', 'asp-net'],
-        'sql': ['sql server', 'mysql', 'postgresql', 'postgres', 'sqlite'],
+        'sql': ['structured query language'],
+        'mysql': ['mariadb'],
+        'postgresql': ['postgres', 'psql'],
+        'sql server': ['mssql', 'microsoft sql server'],
         'javascript': ['js', 'ecmascript'],
         'typescript': ['ts'],
         'python': ['py', 'python3'],
@@ -61,7 +64,7 @@ class SkillNormalization:
         'azure': ['microsoft azure'],
         'kubernetes': ['k8s', 'k8', 'k8s-admin'],
         'docker': [],
-        'git': ['github', 'gitlab', 'bitbucket'],
+        'git': ['git scm'],
         'ci/cd': ['cicd', 'continuous integration'],
         'machine learning': ['ml'],
         'deep learning': ['dl'],
@@ -73,8 +76,7 @@ class SkillNormalization:
         'elasticsearch': ['elastic'],
         'apache spark': ['spark'],
         'hadoop': [],
-    }
-    
+    }    
     @staticmethod
     def normalize(skill_name: str) -> str:
         """
@@ -393,9 +395,10 @@ class MatchingEngine:
         }
         
         candidate_degrees = [
-            degree_levels.get(e.degree.lower(), 2)
+            degree_levels.get((e.degree or "").lower(), 2)
             for e in candidate.education
-        ]
+        ]     
+           
         max_candidate_degree = max(candidate_degrees) if candidate_degrees else 2
         
         # If no requirement specified, assume bachelor
@@ -468,12 +471,15 @@ class MatchingEngine:
         if not candidate.projects:
             return 0.3
         
-        avg_impact = sum(p.impact_score for p in candidate.projects) / len(candidate.projects) / 5
-        avg_complexity = sum(p.complexity_score for p in candidate.projects) / len(candidate.projects) / 5
+        impacts = [p.impact_score for p in candidate.projects if p.impact_score is not None]
+        complexities = [p.complexity_score for p in candidate.projects if p.complexity_score is not None]
+        
+        avg_impact = (sum(impacts) / len(impacts) / 5) if impacts else 0.3
+        avg_complexity = (sum(complexities) / len(complexities) / 5) if complexities else 0.3
         
         # Average of impact and complexity
         return (avg_impact + avg_complexity) / 2
-    
+        
     def _calculate_experience_gap(
         self,
         candidate: CandidateProfile,
@@ -483,10 +489,7 @@ class MatchingEngine:
         candidate_months = candidate.derived_fields.total_experience_months if candidate.derived_fields else 0
         required_months = (job.experience_years_min or 0) * 12
         
-        gap = max(0, required_months - candidate_months)
-        return gap
-    
-    async def batch_match(
+    def batch_match(
         self,
         candidates: List[CandidateProfile],
         jobs: List[JobDescription]
@@ -503,16 +506,10 @@ class MatchingEngine:
         """
         results = defaultdict(list)
         
-        # Create tasks for all combinations
-        tasks = []
         for candidate in candidates:
             for job in jobs:
-                tasks.append(
-                    self._match_async(candidate, job, results)
-                )
-        
-        # Run all matching tasks concurrently
-        await asyncio.gather(*tasks)
+                score = self.match_candidate_to_job(candidate, job)
+                results[job.jd_id or "unknown"].append(score)
         
         # Sort results by overall score
         for job_id in results:
@@ -521,8 +518,28 @@ class MatchingEngine:
                 reverse=True
             )
         
-        return results
+        return results  
     
+    async def async_batch_match(
+        self,
+        candidates: List[CandidateProfile],
+        jobs: List[JobDescription]
+    ) -> Dict[str, List[MatchingScore]]:
+        """
+        Async batch match multiple candidates to multiple jobs
+        """
+        results = defaultdict(list)
+        
+        tasks = []
+        for candidate in candidates:
+            for job in jobs:
+                tasks.append(
+                    self._match_async(candidate, job, results)
+                )
+        
+        await asyncio.gather(*tasks)
+        return results
+
     async def _match_async(
         self,
         candidate: CandidateProfile,
