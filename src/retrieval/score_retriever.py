@@ -34,7 +34,7 @@ class ScoreRetriever:
         repo_key = f"{cv_id}:{jd_id}"
         score = self.score_repository.get(repo_key)
         
-        if score:
+        if score is not None:
             self.cache_client.set(
                 cache_key,
                 score,
@@ -59,9 +59,14 @@ class ScoreRetriever:
             return cached
         
         # In real implementation, would look up from score history
-        # For now, return latest
-        return self.get_latest_score(cv_id, jd_id)
-    
+        # TODO: Implement versioned score lookup from history
+        logger.warning(
+            f"Versioned score lookup not implemented, returning None for "
+            f"{cv_id}@v{cv_version}:{jd_id}@v{jd_version}"
+        )
+        
+        return None
+
     def get_score_history(self, cv_id: str, jd_id: str) -> List[Dict[str, Any]]:
         """Get score history for CV-JD pair."""
         cache_key = CacheKeys.score_history(cv_id, jd_id)
@@ -73,7 +78,7 @@ class ScoreRetriever:
         repo_key = f"{cv_id}:{jd_id}"
         history = self.score_repository.get_history(repo_key)
         
-        if history:
+        if history is not None:
             self.cache_client.set(
                 cache_key,
                 history,
@@ -90,6 +95,7 @@ class ScoreRetriever:
         """Get all scores for a JD."""
         return self.score_repository.get_scores_for_jd(jd_id)
     
-    def invalidate_score_cache(self, cv_id: str = None, jd_id: str = None) -> int:
+    def invalidate_score_cache(self, cv_id: Optional[str] = None, jd_id: Optional[str] = None) -> int:
         """Invalidate score cache."""
         return self.cache_client.invalidate_scores(cv_id, jd_id)
+    
