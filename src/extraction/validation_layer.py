@@ -155,11 +155,10 @@ class FieldValidator:
         # Should contain mostly letters
         letter_ratio = sum(1 for c in title if c.isalpha()) / len(title)
         if letter_ratio < 0.5:
-            result.error_message = f"Job title has too many non-letter characters"
             result.warnings = ["Contains unusual characters"]
         
         result.is_valid = True
-        return result
+        return result    
     
     @staticmethod
     def validate_years_experience(years: float, confidence: float = 1.0) -> ValidationResult:
@@ -179,11 +178,10 @@ class FieldValidator:
             return result
         
         if years > 70:
-            result.error_message = "Years experience unrealistic (> 70 years)"
             result.warnings = ["Possibly data entry error"]
         
         if confidence < 0.5:
-            result.warnings = ["Low confidence in experience calculation"]
+            result.warnings.append("Low confidence in experience calculation")
         
         result.is_valid = True
         return result
@@ -233,10 +231,10 @@ class FieldValidator:
             return result
         
         if len(skills) > 50:
-            result.error_message = "Too many skills (> 50)"
             result.warnings = [f"Truncating to top 50 of {len(skills)} skills"]
         
         result.is_valid = True
+        
         return result
 
 
@@ -440,14 +438,15 @@ class ExtractionValidator:
             
             if 'years' in experience and experience['years'] is not None:
                 total_fields += 1
+            if 'years' in experience and experience['years'] is not None:
+                total_fields += 1
                 years_value = experience['years']
-                result = self.field_validator.validate_years_experience(years_value)
+                years_conf = experience.get('confidence', 0.5)
+                result = self.field_validator.validate_years_experience(years_value, years_conf)
                 field_results['years_experience'] = result
                 if result.is_valid:
                     valid_count += 1
-                confidence_sum += result.confidence_score
-        
-        # Data integrity checks
+                confidence_sum += result.confidence_score        # Data integrity checks
         data_integrity_issues = self.data_integrity.validate_no_corrupted_data(extraction)
         cross_field_issues.extend(data_integrity_issues)
         
