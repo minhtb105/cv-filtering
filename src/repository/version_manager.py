@@ -28,7 +28,7 @@ class RescoringEvent:
         reason: str = "",
         priority: int = 5,
     ):
-        self.event_id = f"{event_type}:{entity_id}:{datetime.now(datetime.timezone.utc).timestamp()}"
+        self.event_id = f"{event_type}:{entity_id}:{datetime.now(timezone.utc).timestamp()}"
         self.event_type = event_type
         self.entity_id = entity_id
         self.entity_type = entity_type
@@ -158,3 +158,4 @@ class VersionManager:
     def get_jd_version(self, jd_id: str) -> int:
         """Get current version of JD."""
         return self.jd_versions.get(jd_id, 0)
+    
