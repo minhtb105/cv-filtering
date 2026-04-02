@@ -2,6 +2,7 @@
 MongoDB Database Manager - Singleton connection
 """
 
+import threading
 from typing import Optional
 from pymongo import MongoClient
 from pymongo.database import Database
@@ -14,17 +15,29 @@ class DatabaseManager:
     _instance: Optional["DatabaseManager"] = None
     _client: Optional[MongoClient] = None
     _db: Optional[Database] = None
+    _lock: threading.Lock = threading.Lock()
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+        
         return cls._instance
 
     def connect(self) -> Database:
         """Connect to MongoDB"""
         if self._client is None:
-            self._client = MongoClient(settings.MONGODB_URL)
-            self._db = self._client[settings.MONGODB_DB]
+            with self._lock:
+                if self._client is None:
+                    self._client = MongoClient(
+                        settings.MONGODB_URL,
+                        serverSelectionTimeoutMS=5000,
+                        connectTimeoutMS=5000,
+                        socketTimeoutMS=30000,
+                    )
+                    self._db = self._client[settings.MONGODB_DB]
+        
         return self._db
 
     def get_db(self) -> Database:
