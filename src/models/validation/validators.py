@@ -5,7 +5,6 @@ Contains utility classes for data validation and normalization used throughout
 the CV Intelligence Platform.
 """
 
-import re
 import phonenumbers
 from datetime import datetime, timezone
 from typing import Optional
@@ -33,9 +32,9 @@ class PhoneValidator:
     def validate_e164(phone: str) -> bool:
         """Validate E.164 format"""
         try:
-            parsed = phonenumbers.parse(phone, None)  # None vì đã có +
+            parsed = phonenumbers.parse(phone, None) # None because input already includes +
             return phonenumbers.is_valid_number(parsed)
-        except:
+        except phonenumbers.NumberParseException:
             return False
 
 
@@ -76,10 +75,9 @@ class DateValidator:
         """
         try:
             start = datetime.strptime(start_date, '%Y-%m')
-            end = end_date
             
-            if not end:
-                end = datetime.now(timezone.utc())
+            if not end_date:
+                end = datetime.now(timezone.utc)
             else:
                 end = datetime.strptime(end_date, '%Y-%m')
             
@@ -87,3 +85,4 @@ class DateValidator:
             return max(0, months)
         except (ValueError, AttributeError):
             return 0
+        
