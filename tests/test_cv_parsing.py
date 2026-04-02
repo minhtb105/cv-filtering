@@ -366,8 +366,9 @@ class TestMarkdownGenerator:
             MarkdownGenerator.save_markdown(markdown, filepath)
 
             assert os.path.exists(filepath)
-            with open(filepath, "r") as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
+                
             assert content == markdown
 
 
