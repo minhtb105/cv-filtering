@@ -52,7 +52,7 @@ class SkillScorer(BaseScorer):
                 if isinstance(skills, list):
                     return skills
                 elif isinstance(skills, str):
-                    return [s.strip() for s in skills.split(",")]
+                    return [s.strip() for s in skills.split(",") if s.strip()]
         
         return []
     
