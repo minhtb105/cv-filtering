@@ -315,7 +315,7 @@ Return ONLY valid JSON following the schema provided. No explanations."""
             Dict with status='success' (data extracted), 'partial' (raw_text + fallback),
             or 'error' (no data extracted)
         """
-        prompt = self.EXTRACTION_PROMPT.format(cv_text=cv_markdown)
+        prompt = self.EXTRACTION_PROMPT.replace("{cv_text}", cv_markdown)
 
         logger.info(f"Extracting with model: {self.config.model_name}")
 
