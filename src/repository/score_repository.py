@@ -15,15 +15,15 @@ class ScoreRepository(BaseRepository):
     def __init__(self, storage_backend: Optional[Dict[str, Any]] = None):
         """Initialize score repository."""
         super().__init__(storage_backend)
-        self.scores = {}           # {cv_id}:{jd_id} -> latest score
-        self.score_history = {}    # {cv_id}:{jd_id} -> [scores]
-        self.score_metadata = {}   # {cv_id}:{jd_id} -> metadata
+        self.scores = {}           # {cv_id: jd_id} -> latest score
+        self.score_history = {}    # {cv_id: jd_id} -> [scores]
+        self.score_metadata = {}   # {cv_id: jd_id} -> metadata
     
     def get(self, key: str) -> Optional[Any]:
         """Get latest score by key."""
         return self.scores.get(key)
     
-    def set(self, key: str, value: Any) -> bool:
+    def set(self, key: str, value: Dict[str, Any]) -> bool:
         """Store score."""
         try:
             self.scores[key] = {
