@@ -262,7 +262,6 @@ class InterviewDecisionEngine:
         Returns:
             DecisionResult với decision, reasoning, evidence
         """
-        score = match_score.composite_score
         is_first_time = previous_assessment is None
         
         if is_first_time:
@@ -294,17 +293,17 @@ class InterviewDecisionEngine:
                 is_first_time=True,
             )
         
-        elif score < t["light_rescreen"]:
+        elif score < t["deep_interview"]:
             return DecisionResult(
                 decision="DEEP_INTERVIEW",
-                confidence=self._calc_confidence(score, t["light_rescreen"], direction="below"),
+                confidence=self._calc_confidence(score, t["deep_interview"], direction="below"),
                 reasoning=(
                     f"Score {score:.0f}/100 cần phỏng vấn đầy đủ để verify. "
                     f"Có {len(match_score.missing_required_skills)} required skills cần clarify."
                 ),
                 evidence=self._build_evidence(match_score),
                 composite_score=score,
-                effective_threshold=t["light_rescreen"],
+                effective_threshold=t["deep_interview"],
                 is_first_time=True,
                 recommended_interview_duration="60-90 phút",
                 focus_areas=self._build_focus_areas(match_score),
@@ -528,23 +527,3 @@ class InterviewDecisionEngine:
         confidence = 0.50 + min(distance / 20.0, 1.0) * 0.45
         
         return round(confidence, 2)
-
-
-# ---------------------------------------------------------------------------
-# Fix cho matching_engine.py — NameError bug
-# ---------------------------------------------------------------------------
-
-# Bug gốc trong src/scoring/matching_engine.py dòng 128:
-#   if normalized == canonical.lower() or string in aliases:
-#                                         ^^^^^^ undefined!
-# 
-# Fix: thay 'string' → 'normalized'
-# 
-# Đoạn code đúng:
-# @staticmethod
-# def get_canonical_name(skill: str) -> str:
-#     normalized = SkillNormalization.normalize(skill)
-#     for canonical, aliases in SkillNormalization.ALIASES.items():
-#         if normalized == canonical.lower() or normalized in aliases:  # FIX: string → normalized
-#             return canonical
-#     return normalized
