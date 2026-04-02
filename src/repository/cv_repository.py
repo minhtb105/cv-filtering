@@ -2,7 +2,7 @@
 
 import logging
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.repository.base_repository import BaseRepository
 
@@ -27,7 +27,7 @@ class CVRepository(BaseRepository):
         try:
             self.cv_metadata[key] = {
                 **value,
-                "updated_at": datetime.now(datetime.timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }
             self._track_version(key, value)
             logger.info(f"Stored CV metadata for {key}.")
@@ -73,7 +73,7 @@ class CVRepository(BaseRepository):
         
         self.cv_versions[cv_id].append({
             "version": latest + 1,
-            "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "checksum": hash(str(value)),
             "size": len(str(value)),
         })
@@ -81,7 +81,7 @@ class CVRepository(BaseRepository):
     def get_cv_by_version(self, cv_id: str, version: int) -> Optional[Dict[str, Any]]:
         """Get CV at specific version."""
         versions = self.get_versions(cv_id)
-        if version <= len(versions):
+        if 1 <= version <= len(versions):
             return {
                 **self.cv_metadata.get(cv_id, {}),
                 "version": version,
