@@ -26,7 +26,11 @@ class CompositeScorer:
             "interview": 0.15,
         }
         
-        self.weights = weights or default_weights
+        self.weights = {**default_weights, **(weights or {})} 
+        for key, value in self.weights.items():
+            if value < 0:
+                raise ValueError(f"Weight for '{key}' must be non-negative, got {value}")
+        
         self.skill_scorer = SkillScorer(self.weights.get("skill", 0.3))
         self.experience_scorer = ExperienceScorer(self.weights.get("experience", 0.35))
         self.education_scorer = EducationScorer(self.weights.get("education", 0.2))
