@@ -3,8 +3,9 @@ Normalized CV Data Storage
 Stores translated and normalized CV data
 """
 
+import re
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from src.storage.db_manager import db_manager
 from src.schemas import CVVersion
 
@@ -30,7 +31,7 @@ class NormalizedStorage:
             "translation_status": version.translation_status,
             "extraction_confidence": version.extraction_confidence,
             "extracted_at": version.extracted_at,
-            "translated_at": datetime.now(datetime.timezone.utc),
+            "translated_at": datetime.now(timezone.utc),
         }
         result = self.collection.insert_one(doc)
         return str(result.inserted_id)
@@ -49,19 +50,25 @@ class NormalizedStorage:
 
     def search_by_skill(self, skill: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search CVs by skill"""
+        escaped_skill = re.escape(skill)
+        
         cursor = self.collection.find(
-            {"profile.skills.name": {"$regex": skill, "$options": "i"}}
+            {"profile.skills.name": {"$regex": escaped_skill, "$options": "i"}}
         ).limit(limit)
+        
         return list(cursor)
 
     def search_by_text(self, text: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search CVs by text content"""
+        escaped_text = re.escape(text)
+        
         cursor = self.collection.find(
             {"$or": [
-                {"normalized_text": {"$regex": text, "$options": "i"}},
-                {"profile.summary": {"$regex": text, "$options": "i"}},
+                {"normalized_text": {"$regex": escaped_text, "$options": "i"}},
+                {"profile.summary": {"$regex": escaped_text, "$options": "i"}},
             ]}
         ).limit(limit)
+        
         return list(cursor)
 
     def delete(self, cv_id: str) -> int:
