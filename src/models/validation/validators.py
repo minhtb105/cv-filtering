@@ -6,7 +6,8 @@ the CV Intelligence Platform.
 """
 
 import re
-from datetime import datetime
+import phonenumbers
+from datetime import datetime, timezone
 from typing import Optional
 
 
@@ -14,39 +15,28 @@ class PhoneValidator:
     """E.164 phone number validation and normalization"""
     
     @staticmethod
-    def normalize_e164(phone: str) -> Optional[str]:
+    def normalize_e164(phone: str, region: Optional[str] = "VN") -> Optional[str]:
         """
         Normalize phone to E.164 format: +<country_code><number>
         Examples: "+84912345678", "+12025551234"
         """
-        if not phone:
+        try:
+            parsed = phonenumbers.parse(phone, region)
+            if phonenumbers.is_valid_number(parsed):
+                return phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.E164
+                )
+        except:
             return None
-        
-        # Remove common separators and spaces
-        cleaned = re.sub(r'[\s\-\(\)\.]+', '', phone)
-        
-        # If already E.164 format
-        if cleaned.startswith('+'):
-            if re.match(r'^\+\d{10,15}$', cleaned):
-                return cleaned
-            else:
-                return None  # Invalid E.164
-        
-        # Convert 0 prefix to country code (Vietnam: 0 → +84)
-        if cleaned.startswith('0') and len(cleaned) >= 10:
-            cleaned = '+84' + cleaned[1:]
-            return cleaned if re.match(r'^\+84\d{9}$', cleaned) else None
-        
-        # If no + and 10-15 digits, assume US (+1)
-        if re.match(r'^\d{10,15}$', cleaned):
-            return '+1' + cleaned
-        
-        return None
     
     @staticmethod
     def validate_e164(phone: str) -> bool:
         """Validate E.164 format"""
-        return bool(re.match(r'^\+\d{10,15}$', phone))
+        try:
+            parsed = phonenumbers.parse(phone, None)  # None vì đã có +
+            return phonenumbers.is_valid_number(parsed)
+        except:
+            return False
 
 
 class DateValidator:
@@ -89,7 +79,7 @@ class DateValidator:
             end = end_date
             
             if not end:
-                end = datetime.now(datetime.timezone.utc())
+                end = datetime.now(timezone.utc())
             else:
                 end = datetime.strptime(end_date, '%Y-%m')
             
