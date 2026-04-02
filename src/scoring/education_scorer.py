@@ -59,14 +59,37 @@ class EducationScorer(BaseScorer):
     def _extract_required_degree(self, jd_data: Dict[str, Any]) -> str:
         """Extract required degree from JD."""
         degree = jd_data.get("required_degree", "")
-        return degree.lower()
+        
+        return degree.lower() if isinstance(degree, str) else ""    
     
     def _extract_preferred_certs(self, jd_data: Dict[str, Any]) -> list:
         """Extract preferred certifications from JD."""
         certs = jd_data.get("preferred_certifications", [])
         if isinstance(certs, list):
-            return [c.lower() for c in certs]
+            return [c.lower() for c in certs if isinstance(c, str)]
+        
         return []
+
+    def _normalize_degree(self, degree: str) -> str:
+        """Normalize degree string to hierarchy key."""
+        degree = degree.lower().strip()
+        
+        if any(x in degree for x in ["phd", "ph.d", "doctorate"]):
+            return "phd"
+        
+        if any(x in degree for x in ["master", "mba", "ms ", "m.s."]):
+            return "master"
+        
+        if any(x in degree for x in ["bachelor", "bs ", "b.s.", "ba ", "b.a."]):
+            return "bachelors"
+        
+        if "associate" in degree:
+            return "associate"
+        
+        if "high school" in degree or "ged" in degree:
+            return "high school"
+        
+        return degree
     
     def _score_degrees(self, cv_degrees: list, jd_required: str) -> float:
         """Score based on degree match."""
@@ -81,17 +104,17 @@ class EducationScorer(BaseScorer):
         if not jd_required:
             return 70  # No specific requirement
         
-        jd_level = degree_hierarchy.get(jd_required, 0)
+        jd_level = degree_hierarchy.get(self._normalize_degree(jd_required), 0)
         
         # Check if CV has required degree or higher
         for cv_degree in cv_degrees:
-            cv_level = degree_hierarchy.get(cv_degree, 0)
+            cv_level = degree_hierarchy.get(self._normalize_degree(cv_degree), 0)
             if cv_level >= jd_level:
                 return 100 if cv_level == jd_level else 95
         
         # Partial credit if close
         if cv_degrees:
-            best_match = max(degree_hierarchy.get(d, 0) for d in cv_degrees)
+            best_match = max(degree_hierarchy.get(self._normalize_degree(d), 0) for d in cv_degrees)
             if best_match == jd_level - 1:
                 return 70
         
