@@ -245,7 +245,6 @@ class CVProcessingPipeline:
     def process_batch(
         self,
         pdf_dir: str,
-        output_dir: Optional[str] = None
     ) -> Dict[str, ProcessingResult]:
         """
         Process multiple PDFs in a directory.
@@ -268,4 +267,6 @@ class CVProcessingPipeline:
             results[pdf_file.name] = result
 
         logger.info(f"[Batch] Complete: {len(results)} files processed")
+        
         return results
+    
