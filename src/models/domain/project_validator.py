@@ -355,21 +355,24 @@ class ProjectValidator:
         inconsistencies = []
         
         # Check if duration is very short but complexity is high
-        if project.duration.duration_months < 3 and project.complexity_level == 'high':
+        if (project.duration and 
+            project.duration.duration_months is not None and
+            project.duration.duration_months < 3 and 
+            project.complexity_level == 'high'):
             inconsistencies.append("High complexity with very short duration may be inconsistent")
         
         # Check if no technologies but high complexity
-        if len(project.technologies) == 0 and project.complexity_level == 'high':
+        if (not project.technologies or len(project.technologies) == 0) and project.complexity_level == 'high':
             inconsistencies.append("High complexity project should specify technologies used")
         
         # Check if ownership is 'owner' but no metrics provided
-        if project.ownership == 'owner' and len(project.metrics) == 0:
+        if project.ownership == 'owner' and (not project.metrics or len(project.metrics) == 0):
             inconsistencies.append("Project owner should provide measurable outcomes")
         
         # Check if role is very generic for a complex project
         generic_roles = ['developer', 'programmer', 'coder']
         if (project.complexity_level in ['high', 'medium'] and 
-            project.role.lower() in generic_roles and 
+            project.role and project.role.lower() in generic_roles and 
             len(project.role) < 20):
             inconsistencies.append("Complex project should have more specific role description")
         
