@@ -48,8 +48,17 @@ class OllamaTranslator:
             )
 
             if response.status_code == 200:
-                result = response.json()
-                return result.get("response", text).strip()
+                try:
+                    result = response.json()
+                except requests.JSONDecodeError:
+                    logger.warning("Invalid JSON response from translation API")
+                    return text
+                
+                translated = result.get("response")
+                if translated:
+                    return translated.strip()
+                
+                return text
             else:
                 logger.warning(
                     "Translation failed with status %d: %s",
