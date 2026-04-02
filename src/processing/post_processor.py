@@ -9,6 +9,7 @@ Handles:
 Architecture: Clean separation of concerns, no LLM re-processing, trust LLM extraction
 """
 
+from copy import copy
 import logging
 import re
 from typing import Optional, List
@@ -93,6 +94,7 @@ class PostProcessor:
             ProcessingResult with enriched profile and metadata
         """
         errors = []
+        profile_copy = copy.deepcopy(profile)
         
         try:
             # Step 1: Normalize dates across all sections
@@ -105,12 +107,12 @@ class PostProcessor:
             seniority_level = self._assign_seniority_level(profile, total_years)
             
             # Step 4: Enrich profile with computed values
-            profile.total_years_of_experience = total_years
-            profile.seniority_level = seniority_level
+            profile_copy.total_years_of_experience = total_years
+            profile_copy.seniority_level = seniority_level
             
             return ProcessingResult(
                 success=True,
-                profile=profile,
+                profile=profile_copy,
                 total_years_experience=total_years,
                 seniority_level=seniority_level,
                 errors=errors
@@ -135,36 +137,64 @@ class PostProcessor:
         if profile.experience:
             for entry in profile.experience:
                 if entry.start_date:
-                    entry.start_date = self.normalize_date(entry.start_date)
+                    try:
+                        entry.start_date = self.normalize_date(entry.start_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to normalize start_date: {entry.start_date}")
+                
                 if entry.end_date:
-                    entry.end_date = self.normalize_date(entry.end_date)
+                    try:
+                        entry.end_date = self.normalize_date(entry.end_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to parse end date for experience entry: {e}")
         
         # Normalize project dates
         if profile.projects:
             for project in profile.projects:
                 if project.start_date:
-                    project.start_date = self.normalize_date(project.start_date)
+                    try:
+                        project.start_date = self.normalize_date(project.start_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to normalize start_date for project entry: {project.start_date}")
+
                 if project.end_date:
-                    project.end_date = self.normalize_date(project.end_date)
-        
+                    try:
+                        project.end_date = self.normalize_date(project.end_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to parse end date for project entry: {e}")
+
         # Normalize education dates
         if profile.education:
             for edu in profile.education:
                 if edu.start_date:
-                    edu.start_date = self.normalize_date(edu.start_date)
+                    try:
+                        edu.start_date = self.normalize_date(edu.start_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to normalize start_date for education entry: {edu.start_date}")
+                
                 if edu.end_date:
-                    edu.end_date = self.normalize_date(edu.end_date)
-        
+                    try:
+                        edu.end_date = self.normalize_date(edu.end_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to normalize end_date for education entry: {edu.end_date}")
+
         # Normalize certification dates
         if profile.certifications:
             for cert in profile.certifications:
                 if cert.issue_date:
-                    cert.issue_date = self.normalize_date(cert.issue_date)
+                    try:
+                        cert.issue_date = self.normalize_date(cert.issue_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to normalize issue_date for certification entry: {cert.issue_date}")
+                
                 if cert.expiry_date:
-                    cert.expiry_date = self.normalize_date(cert.expiry_date)
-    
+                    try:
+                        cert.expiry_date = self.normalize_date(cert.expiry_date, errors)
+                    except Exception as e:
+                        errors.append(f"Failed to normalize expiry_date for certification entry: {cert.expiry_date}")
+
     @staticmethod
-    def normalize_date(date_input: str) -> str:
+    def normalize_date(date_input: str, errors: List[str]) -> str:
         """
         Normalize date to ISO format YYYY-MM-DD.
         
@@ -183,7 +213,7 @@ class PostProcessor:
             Date in YYYY-MM-DD format
         """
         if not isinstance(date_input, str):
-            return None
+            return date_input  # Return as-is if already a date object or other type
         
         date_str = date_input.strip()
         
@@ -227,6 +257,7 @@ class PostProcessor:
                         return transformer(groups)
                 except Exception as e:
                     logger.warning(f"Failed to parse date '{date_str}': {e}")
+                    errors.append(f"Failed to parse date '{date_str}")
                     continue
         
         # If no pattern matches, try to parse with dateutil as last resort
@@ -236,6 +267,7 @@ class PostProcessor:
             return parsed.strftime("%Y-%m-%d")
         except Exception as e:
             logger.warning(f"Could not normalize date '{date_str}': {e}")
+            errors.append(f"Could not normalize date '{date_str}': {e}")
             return date_input
     
     @staticmethod
@@ -316,7 +348,7 @@ class PostProcessor:
             normalized = PostProcessor.normalize_date(date_str)
             if normalized:
                 return datetime.strptime(normalized, "%Y-%m-%d")
-        except:
+        except (ValueError, TypeError):
             pass
         
         raise ValueError(f"Cannot parse date: {date_str}")
@@ -345,7 +377,7 @@ class PostProcessor:
             total_years: Total years of experience
             
         Returns:
-            SeniorityLevel (junior, mid, senior, lead, principal)
+            SeniorityLevel (intern, fresher, junior, mid, senior, lead, principal)
         """
         
         # Step 1: Determine base level from years
@@ -355,8 +387,13 @@ class PostProcessor:
         boosted_level = base_level
         
         if profile.experience and len(profile.experience) > 0:
-            # Get most recent role title (usually first in the list if sorted by date desc)
-            most_recent_title = profile.experience[0].title
+            # Find most recent role by start_date
+            most_recent = max(
+                (e for e in profile.experience if e.start_date),
+                key=lambda e: e.start_date,
+                default=profile.experience[0]
+            )
+            most_recent_title = most_recent.title
             if most_recent_title:
                 most_recent_title = most_recent_title.lower()
                 # Check if title contains seniority keywords
@@ -365,8 +402,8 @@ class PostProcessor:
                 title_level = None            
             # Boost logic: if title suggests higher level, use it (but not degrade)
             if title_level and self._level_to_rank(title_level) > self._level_to_rank(base_level):
-                boosted_level = title_level
-        
+                boosted_level = title_level        
+            
         return boosted_level
     
     @staticmethod
