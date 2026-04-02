@@ -6,8 +6,6 @@ Comprehensive ATS-standard data models for candidate profiles.
 """
 
 from typing import List, Optional, Dict, Literal
-from distro import name
-from unicodedata import name
 from pydantic import BaseModel, Field, field_validator, model_validator
 from datetime import datetime, timezone
 import re
@@ -257,8 +255,14 @@ class Education(BaseModel):
 
     @property
     def normalized_gpa(self):
+        """Normalize GPA to 4.0 scale. Returns None if data is missing or invalid."""
         if self.gpa and self.gpa_scale:
+            if self.gpa > self.gpa_scale:
+                return None  # Invalid: GPA exceeds scale
+            
             return (self.gpa / self.gpa_scale) * 4.0
+        
+        return None
     
     class Config:
         frozen = False
@@ -364,15 +368,22 @@ class CandidateProfile(BaseModel):
         
         # Education level
         degree_levels = {
-            'high school': 1, 'bachelor': 3, 'master': 4, 'phd': 5, 'doctorate': 5
+            'high school': 1, 'associate': 2, 'bachelor': 3, 'master': 4, 'phd': 5, 'doctorate': 5
         }
+        
         education_level = None
+        max_level = 0
+        
         if self.education:
-            level = max(
-                (degree_levels.get(e.degree.lower(), 0), e.degree)
-                for e in self.education
-            )
-            education_level = level[1]
+            for e in self.education:
+                degree_lower = e.degree.lower()
+                for keyword, level in degree_levels.items():
+                    if keyword in degree_lower:
+                        if level > max_level:
+                            max_level = level
+                            education_level = e.degree
+                        
+                        break
         
         return DerivedFields(
             total_experience_months=total_months,
