@@ -36,16 +36,18 @@ class ExperienceScorer(BaseScorer):
     def _extract_years(self, cv_data: Dict[str, Any]) -> float:
         """Extract total years of experience from CV."""
         years = cv_data.get("total_experience_years", 0)
-        if isinstance(years, str):
-            try:
-                return float(years)
-            except ValueError:
-                return 0
-        return float(years)
-    
+        if years is None:
+            return 0.0
+        
+        try:
+            return float(years)
+        except (TypeError, ValueError):
+            return 0.0    
+        
     def _extract_seniority(self, cv_data: Dict[str, Any]) -> str:
         """Extract seniority level from CV."""
-        seniority = cv_data.get("seniority_level", "mid")
+        seniority = cv_data.get("seniority_level") or "mid"
+        
         return seniority.lower()
     
     def _extract_min_years(self, jd_data: Dict[str, Any]) -> float:
@@ -65,6 +67,9 @@ class ExperienceScorer(BaseScorer):
     
     def _score_years(self, cv_years: float, jd_min_years: float) -> float:
         """Score based on years of experience."""
+        cv_years = max(0, cv_years)
+        jd_min_years = max(0, jd_min_years)
+        
         if jd_min_years == 0:
             return 50  # No requirement
         
@@ -97,11 +102,17 @@ class ExperienceScorer(BaseScorer):
         else:
             excess = min(cv_level - jd_level, 3)
             return min(100, 85 + (excess / 3) * 15)
-    
     def _score_progression(self, cv_data: Dict[str, Any]) -> float:
         """Score based on career progression."""
         # Check for increasing responsibility
         progression = cv_data.get("career_progression", 0)
+        if not isinstance(progression, (int, float)):
+            try:
+                progression = float(progression) if progression else 0
+            except (TypeError, ValueError):
+                progression = 0
+        
         if progression > 0:
             return min(100, 50 + (progression * 10))
-        return 50
+        
+        return 50 
