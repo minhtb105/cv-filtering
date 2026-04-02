@@ -26,7 +26,7 @@ class CVRetriever:
         # Try cache first
         cache_key = (
             CacheKeys.cv_extraction(cv_id)
-            if not version
+            if version is None
             else CacheKeys.cv_extraction(f"{cv_id}_v{version}")
         )
         
