@@ -2,12 +2,12 @@
 
 import logging
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from src.repository.base_repository import BaseRepository
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 class InterviewRepository(BaseRepository):
     """Repository for interview data."""
@@ -30,7 +30,7 @@ class InterviewRepository(BaseRepository):
             
             entry = {
                 **value,
-                "recorded_at": datetime.now(datetime.timezone.utc).isoformat(),
+                "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "sequence": len(self.interviews[key]) + 1,
             }
             
@@ -58,7 +58,7 @@ class InterviewRepository(BaseRepository):
     
     def get_all_interviews(self, cv_id: str) -> List[Dict[str, Any]]:
         """Get all interview results for CV."""
-        return self.interviews.get(cv_id, [])
+        return list(self.interviews.get(cv_id, []))
     
     def get_interview_by_sequence(self, cv_id: str, sequence: int) -> Optional[Dict[str, Any]]:
         """Get interview result by sequence number."""
