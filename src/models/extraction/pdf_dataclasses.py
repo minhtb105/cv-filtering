@@ -75,6 +75,10 @@ class Line:
     words: List[Word]
     page: int
 
+    def __post_init__(self):
+        if not self.words:
+            raise ValueError("Line must contain at least one word")
+
     @property
     def text(self) -> str:
         return " ".join(w.text for w in self.words)
@@ -117,6 +121,10 @@ class Block:
     lines: List[Line]
     page: int
     block_type: str = "unknown"  # full_width_header | left_col | right_col | full_width_body | table
+
+    def __post_init__(self):
+        if not self.lines:
+            raise ValueError("Block must contain at least one line")
 
     @property
     def text(self) -> str:
