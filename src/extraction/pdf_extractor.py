@@ -178,7 +178,7 @@ def lines_to_markdown_table(table_lines: List[Line]) -> str:
     """Convert a sequence of table rows to Markdown table."""
     rows = []
     for ln in table_lines:
-        cells = [w.text for w in ln.words]
+        cells = [w.text.replace("|", "\\|") for w in ln.words]
         rows.append(cells)
 
     if not rows:
@@ -427,7 +427,57 @@ class PDFExtractor:
             return self._fallback_pdfplumber(pdf_path)
 
         try:
-            doc = fitz.open(pdf_path)
+            with fitz.open(pdf_path) as doc:
+                page_blocks: Dict[int, List[Block]] = {}
+                page_geoms: Dict[int, PageGeometry] = {}
+
+                for page_num, page in enumerate(doc, start=1):
+                    words, geom = extract_words_from_page(page, page_num)
+                    page_geoms[page_num] = geom
+
+                    if not words:
+                        page_blocks[page_num] = []
+                        continue
+
+                    lines = assemble_lines(words, page_num)
+                    med_h = _median_line_height(lines)
+                    blocks = group_lines_into_blocks(lines, geom)
+
+                    processed_blocks: List[Block] = []
+                    table_accum: List[Line] = []
+
+                    def flush_table(page_num=page_num):
+                        if len(table_accum) >= 2:
+                            md_table = lines_to_markdown_table(table_accum)
+                            tb = Block(lines=list(table_accum), page=page_num, block_type="table")
+                            tb._md_override = md_table
+                            processed_blocks.append(tb)
+                        elif table_accum:
+                            processed_blocks.append(Block(lines=list(table_accum), page=page_num))
+                        table_accum.clear()
+
+                    for block in blocks:
+                        is_tbl = _detect_table_lines(block.lines, geom.width)
+                        if all(is_tbl) and len(block.lines) >= 2:
+                            table_accum.extend(block.lines)
+                        else:
+                            flush_table()
+                            processed_blocks.append(block)
+
+                    flush_table()
+                    classify_blocks(processed_blocks, lines, geom, med_h)
+                    page_blocks[page_num] = processed_blocks
+
+            intermediate_md = assemble_reading_order(page_blocks, page_geoms)
+            full_text = assemble_plain_text(page_blocks)
+
+            return ExtractionResult(
+                intermediate_markdown=intermediate_md,
+                full_text=full_text,
+                total_pages=len(page_blocks),
+                is_success=True,
+            )
+
         except Exception as e:
             return ExtractionResult(
                 intermediate_markdown="",
@@ -437,72 +487,26 @@ class PDFExtractor:
                 error=str(e),
             )
 
-        page_blocks: Dict[int, List[Block]] = {}
-        page_geoms: Dict[int, PageGeometry] = {}
-
-        for page_num, page in enumerate(doc, start=1):
-            words, geom = extract_words_from_page(page, page_num)
-            page_geoms[page_num] = geom
-
-            if not words:
-                page_blocks[page_num] = []
-                continue
-
-            lines = assemble_lines(words, page_num)
-            med_h = _median_line_height(lines)
-            blocks = group_lines_into_blocks(lines, geom)
-
-            processed_blocks: List[Block] = []
-            table_accum: List[Line] = []
-
-            def flush_table(page_num=page_num):
-                if len(table_accum) >= 2:
-                    md_table = lines_to_markdown_table(table_accum)
-                    tb = Block(lines=list(table_accum), page=page_num, block_type="table")
-                    tb._md_override = md_table
-                    processed_blocks.append(tb)
-                elif table_accum:
-                    processed_blocks.append(Block(lines=list(table_accum), page=page_num))
-                table_accum.clear()
-
-            for block in blocks:
-                is_tbl = _detect_table_lines(block.lines, geom.width)
-                if all(is_tbl) and len(block.lines) >= 2:
-                    table_accum.extend(block.lines)
-                else:
-                    flush_table()
-                    processed_blocks.append(block)
-
-            flush_table()
-            classify_blocks(processed_blocks, lines, geom, med_h)
-            page_blocks[page_num] = processed_blocks
-
-        doc.close()
-
-        intermediate_md = assemble_reading_order(page_blocks, page_geoms)
-        full_text = assemble_plain_text(page_blocks)
-
-        return ExtractionResult(
-            intermediate_markdown=intermediate_md,
-            full_text=full_text,
-            total_pages=len(page_blocks),
-            is_success=True,
-        )
-
     def _fallback_pdfplumber(self, pdf_path: str) -> ExtractionResult:
         try:
             import pdfplumber
+            
             text_parts = []
+            total_page_count = 0
+            
             with pdfplumber.open(pdf_path) as pdf:
+                total_page_count = len(pdf.pages)
                 for page in pdf.pages:
                     t = page.extract_text()
                     if t:
                         text_parts.append(t)
+                        
             full_text = "\n\n".join(text_parts)
+        
             return ExtractionResult(
                 intermediate_markdown=full_text,
                 full_text=full_text,
-                total_pages=len(text_parts),
+                total_pages=total_page_count,
                 is_success=bool(full_text),
                 error="" if full_text else "No text extracted",
             )
@@ -514,3 +518,4 @@ class PDFExtractor:
                 is_success=False,
                 error=str(e),
             )
+            
