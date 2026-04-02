@@ -391,4 +391,5 @@ class TestValidationIntegration:
         # Full extraction validation
         validator = ExtractionValidator(ValidationLevel.PRODUCTION)
         full_result = validator.validate_extraction(extraction)
-        assert full_result.is_valid or len(full_result.cross_field_issues) >= 0
+        assert full_result.is_valid is True
+        assert isinstance(full_result.cross_field_issues, list)
