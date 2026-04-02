@@ -37,7 +37,6 @@ class ProjectValidator:
         warnings = []
         suggestions = []
         field_scores = {}
-        confidence = 0.75  # Base confidence
         
         # Validate required fields
         for field in cls.REQUIRED_FIELDS:
@@ -46,12 +45,12 @@ class ProjectValidator:
                 errors.append(f"Required field '{field}' is missing or empty")
                 field_scores[field] = 0.0
             else:
-                field_scores[field] = 1.0
-                confidence += 0.1
-        
+                field_scores[field] = 1.0  
+                      
         # Validate name
         name_score = cls._validate_name(project.name)
         field_scores['name'] = name_score
+        
         if name_score < 0.5:
             errors.append("Project name is too short or invalid")
         elif name_score < 0.8:
@@ -60,6 +59,7 @@ class ProjectValidator:
         # Validate company
         company_score = cls._validate_company(project.company)
         field_scores['company'] = company_score
+        
         if company_score < 0.3:
             errors.append("Company name is invalid")
         elif company_score < 0.7:
@@ -68,6 +68,7 @@ class ProjectValidator:
         # Validate description
         desc_score = cls._validate_description(project.description)
         field_scores['description'] = desc_score
+        
         if desc_score < 0.3:
             errors.append("Project description is too short or empty")
         elif desc_score < 0.7:
@@ -76,6 +77,7 @@ class ProjectValidator:
         # Validate technologies
         tech_score = cls._validate_technologies(project.technologies)
         field_scores['technologies'] = tech_score
+        
         if tech_score < 0.3:
             errors.append("No technologies specified or too many invalid technologies")
         elif tech_score < 0.7:
@@ -84,6 +86,7 @@ class ProjectValidator:
         # Validate role
         role_score = cls._validate_role(project.role)
         field_scores['role'] = role_score
+        
         if role_score < 0.3:
             warnings.append("Role description is missing or too generic")
         elif role_score < 0.7:
@@ -92,6 +95,7 @@ class ProjectValidator:
         # Validate duration
         duration_score = cls._validate_duration(project.duration)
         field_scores['duration'] = duration_score
+        
         if duration_score < 0.3:
             warnings.append("Project duration is missing or invalid")
         elif duration_score < 0.7:
@@ -100,18 +104,21 @@ class ProjectValidator:
         # Validate complexity level
         complexity_score = cls._validate_complexity(project.complexity_level)
         field_scores['complexity_level'] = complexity_score
+        
         if complexity_score < 0.5:
             errors.append(f"Invalid complexity level: {project.complexity_level}")
         
         # Validate ownership
         ownership_score = cls._validate_ownership(project.ownership)
         field_scores['ownership'] = ownership_score
+        
         if ownership_score < 0.5:
             errors.append(f"Invalid ownership level: {project.ownership}")
         
         # Validate metrics
         metrics_score = cls._validate_metrics(project.metrics)
         field_scores['metrics'] = metrics_score
+        
         if metrics_score < 0.3:
             warnings.append("No metrics provided - consider adding quantifiable outcomes")
         elif metrics_score < 0.7:
@@ -120,6 +127,7 @@ class ProjectValidator:
         # Validate project type
         type_score = cls._validate_project_type(project.project_type)
         field_scores['project_type'] = type_score
+        
         if type_score < 0.5:
             warnings.append("Project type is unknown - consider specifying web/mobile/etc.")
         
@@ -132,7 +140,7 @@ class ProjectValidator:
         if project.confidence > 0.8:
             confidence = min(1.0, confidence + 0.1)
         
-        if len(project.technologies) >= 3:
+        if project.technologies and len(project.technologies) >= 3:
             confidence = min(1.0, confidence + 0.05)
         
         if project.metrics and len(project.metrics) >= 2:
