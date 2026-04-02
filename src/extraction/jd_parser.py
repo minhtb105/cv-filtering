@@ -396,7 +396,8 @@ JOB DESCRIPTION:
         for key, val in JDParser._DEGREE_MAP.items():
             if key in degree_raw:
                 return val
-        return "bachelor"
+            
+        return ""
     
     @staticmethod
     def _infer_seniority(min_exp: float, title: str) -> str:
