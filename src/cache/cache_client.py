@@ -14,11 +14,11 @@ try:
 except ImportError:
     redis = None
 
-from .cache_config import CacheConfig
-from .cache_keys import CacheKeys
+from src.cache.cache_config import CacheConfig
+from src.cache.cache_keys import CacheKeys
+
 
 logger = logging.getLogger(__name__)
-
 
 class CacheException(Exception):
     """Base exception for cache operations."""
@@ -90,7 +90,7 @@ class CacheClient:
             return None
         
         try:
-            self.stats["operations"] += 1
+            self._increment_stat("operations")
             value = self.redis_client.get(key)
             
             if value is None:
@@ -233,17 +233,23 @@ class CacheClient:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
-        total_ops = self.stats["hits"] + self.stats["misses"]
-        hit_rate = (self.stats["hits"] / total_ops * 100) if total_ops > 0 else 0
+        with self._stats_lock:
+            hits = self.stats["hits"]
+            misses = self.stats["misses"]
+            errors = self.stats["errors"]
+            operations = self.stats["operations"]
+        
+        total_ops = hits + misses
+        hit_rate = (hits / total_ops * 100) if total_ops > 0 else 0
         
         return {
-            "hits": self.stats["hits"],
-            "misses": self.stats["misses"],
+            "hits": hits,
+            "misses": misses,
             "hit_rate": f"{hit_rate:.2f}%",
-            "errors": self.stats["errors"],
-            "total_operations": self.stats["operations"],
-        }
-    
+            "errors": errors,
+            "total_operations": operations,
+        }   
+         
     def clear_all(self) -> bool:
         """Clear all cache."""
         if not self.redis_client:
@@ -279,9 +285,8 @@ def cache_result(ttl_seconds: Optional[int] = None):
             # Cache result
             if cache_client:
                 cache_client.set(key, result, ttl_seconds)
-                return CachedValue(result, cache_hit=False)
         
-            return result
+            return CachedValue(result, cache_hit=False)
         
         return wrapper
     
