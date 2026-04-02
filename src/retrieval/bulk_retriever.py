@@ -1,7 +1,7 @@
 """Bulk retriever for batch operations."""
 
 import logging
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from src.retrieval.cv_retriever import CVRetriever
@@ -46,7 +46,7 @@ class BulkRetriever:
     def get_multiple_scores(
         self,
         cv_jd_pairs: List[tuple],  # [(cv_id, jd_id), ...]
-    ) -> Dict[str, Any]:
+    ) -> Dict[Tuple, Any]:
         """Retrieve multiple scores in parallel."""
         results = {}
         
@@ -58,11 +58,11 @@ class BulkRetriever:
             
             for future in as_completed(futures):
                 cv_id, jd_id = futures[future]
-                key = f"{cv_id}:{jd_id}"
+                key = (cv_id, jd_id)
                 try:
                     results[key] = future.result()
                 except Exception as e:
-                    logger.error(f"Error retrieving score {key}: {e}")
+                    logger.error(f"Error retrieving score {cv_id}:{jd_id}: {e}")
                     results[key] = None
         
         logger.info(f"Successfully retrieved {len([v for v in results.values() if v])} of {len(cv_jd_pairs)} scores")
