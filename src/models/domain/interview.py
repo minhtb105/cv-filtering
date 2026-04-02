@@ -34,7 +34,7 @@ class DecisionResult(BaseModel):
     """Decision result with reasoning"""
     decision: str = Field(..., description="Final decision")
     reasoning: str = Field(..., description="Decision reasoning")
-    score_breakdown: Optional['MatchingScore'] = Field(None, description="Score details")
+    score_breakdown: Optional[MatchingScore] = Field(None, description="Score details")
     recommendations: List[str] = Field(default_factory=list, description="Recommendations")
     next_steps: List[str] = Field(default_factory=list, description="Suggested next steps")
     
