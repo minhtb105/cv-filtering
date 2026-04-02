@@ -4,11 +4,13 @@ Combines RAW and NORMALIZED storage
 """
 
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+import logging
 from src.storage.raw_storage import RawStorage
 from src.storage.normalized_storage import NormalizedStorage
 from src.schemas import CVVersion
 
+
+logger = logging.getLogger(__name__)
 
 class CVStorage:
     """Unified CV storage interface"""
@@ -54,12 +56,14 @@ class CVStorage:
         norm_count = 0
         try:
             raw_count = self.raw.delete(cv_id)
-        except Exception:
-            pass  # Log error in production
+        except Exception as e:
+            logger.error("Failed to delete cv_id=%s from raw storage: %s", cv_id, e)
+            
         try:
             norm_count = self.normalized.delete(cv_id)
-        except Exception:
-            pass  # Log error in production
+        except Exception as e:
+            logger.error("Failed to delete cv_id=%s from normalized storage: %s", cv_id, e)
+            
         return raw_count + norm_count
 
     def list_all_cvs(self, normalized: bool = False, limit: int = 100) -> List[str]:
