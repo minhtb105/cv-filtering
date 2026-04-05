@@ -24,7 +24,6 @@ classifiers = [
 ]
 dependencies = [
     # Core dependencies
-    "pdfplumber==0.10.3",
     "python-docx==0.8.11",
     "PyPDF2==3.0.1",
     

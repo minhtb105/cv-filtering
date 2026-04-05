@@ -455,6 +455,7 @@ else:                             → REUSE
 ```
 
 #### Delta → Threshold Adjustment
+*Lưu ý: Trong mỗi category, chỉ áp dụng tier cao nhất thỏa mãn. Adjustments giữa các categories được cộng dồn.*
 
 *Negative adjustment = nới ngưỡng (candidate được lợi). Positive = tăng ngưỡng (cần đánh giá kỹ hơn).*
 
@@ -566,7 +567,7 @@ skill_match_score = min(1.0, required_match_rate + preferred_bonus)
 ```bash
 git clone <repo-url> && cd cv-intelligence
 
-pip install pymupdf pdfplumber rapidfuzz python-dotenv \
+pip install pymupdf rapidfuzz python-dotenv \
             pydantic fastapi uvicorn python-dateutil redis pymongo
 
 # Ollama (optional nhưng recommended)
