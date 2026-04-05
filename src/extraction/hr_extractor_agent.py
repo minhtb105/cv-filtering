@@ -26,8 +26,8 @@ class ExtractionConfig:
     """Configuration for CV extraction orchestrator"""
     llm_model: str = "qwen2.5-coder:3b"
     llm_base_url: str = "http://localhost:11434"
-    llm_timeout: int = 30
-    temperature: float = 0.1
+    llm_timeout: int = 300
+    temperature: float = 0.0
 
 
 class HRExtractorAgent:
