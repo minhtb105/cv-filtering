@@ -35,7 +35,7 @@ dependencies = [
     # Embeddings & Vector search
     "sentence-transformers==2.2.2",
     "faiss-cpu==1.7.4",
-    "numpy==1.26.0",
+    "numpy>=1.26,<2.0",
     "scikit-learn==1.3.2",
     
     # API & Web
@@ -48,7 +48,7 @@ dependencies = [
     "plotly==5.18.0",
     
     # Data handling
-    "pandas==2.1.3",
+    "pandas==2.2.2",
     "openpyxl>=3.1.0",
     
     # Async & Background jobs
